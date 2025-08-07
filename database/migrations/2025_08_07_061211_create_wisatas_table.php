@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id('id_wisata');
             $table->string('nama_wisata', 100);
             $table->foreignId('id_kategori')->constrained('kategori', 'id_kategori')->onDelete('cascade');
+            $table->string('lokasi', 150);
             $table->text('deskripsi');
             $table->string('foto');
             $table->string('jam_operasional', 20);
