@@ -23,6 +23,9 @@
     <link href="{{ asset('assets/vendor/aos/aos.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/vendor/glightbox/css/glightbox.min.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet">
+    <link href="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.3.2/fh-4.0.3/datatables.min.css" rel="stylesheet" integrity="sha384-agp5dJUxwq6B3cZflEbOexGvolzKsopeIwQVoz2SjNog1k29nNJyFLAaRl5CqvZf" crossorigin="anonymous">
+
+    <script src="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.3.2/fh-4.0.3/datatables.min.js" integrity="sha384-L+8cWDuJxLcD+Scp0vrgdZJQ7HjyU8EetzY2LOs2bvheLfsr+XRnxiigYxbjed6s" crossorigin="anonymous"></script>
 
     <!-- Main CSS File -->
     <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet">
@@ -40,8 +43,8 @@
 
         <nav id="navmenu" class="navmenu">
             <ul>
-                <li><a href="index.html#hero">Home</a></li>
-                <li><a href="index.html#about">Kategori Wisata</a></li>
+                <li><a href="{{ route('dashboard') }}" class="{{ Route::currentRouteName() == 'dashboard' ? 'active' : '' }}">Home</a></li>
+                <li><a href="{{ route('kategori-wisata.index') }}" class="{{ Route::currentRouteName() == 'kategori-wisata.index' ? 'active' : '' }}">Kategori Wisata</a></li>
                 <li><a href="index.html#features">Data Wisata</a></li>
                 <li><a href="index.html#services">Data Rute</a></li>
             </ul>
@@ -54,6 +57,14 @@
 </header>
 
 <main class="main">
+
+    @if(Route::currentRouteName() != 'dashboard')
+        <div class="page-title" data-aos="fade">
+            <div class="container d-lg-flex justify-content-start align-items-center">
+                <h1 class="mb-2 mb-lg-0">@yield('halaman')</h1>
+            </div>
+        </div>
+    @endif
 
     <section id="starter-section" class="starter-section section">
 
@@ -88,6 +99,12 @@
 
 <!-- Main JS File -->
 <script src="{{ asset('assets/js/main.js') }}"></script>
+
+<script type="text/javascript">
+    $(document).ready( function () {
+        $('#datatables').DataTable();
+    });
+</script>
 
 </body>
 
