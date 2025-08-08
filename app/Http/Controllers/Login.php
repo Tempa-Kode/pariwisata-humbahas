@@ -36,6 +36,17 @@ class Login extends Controller
         return back()->with('error', 'Login gagal, silakan coba lagi.');
     }
 
+    public function logout(Request $request): RedirectResponse
+    {
+        Auth::logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        return redirect('/');
+    }
+
     public function halamanBeranda() {
         return view('beranda');
     }

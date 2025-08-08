@@ -60,7 +60,11 @@
             <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>
 
-        <a class="btn-getstarted" href="index.html#about">Logout</a>
+        <form action="{{ route('logout') }}" method="post">
+            @csrf
+            @method('POST')
+            <button type="submit" class="btn btn-getstarted">Logout</button>
+        </form>
 
     </div>
 </header>
