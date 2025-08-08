@@ -24,8 +24,17 @@
     <link href="{{ asset('assets/vendor/glightbox/css/glightbox.min.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet">
     <link href="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.3.2/fh-4.0.3/datatables.min.css" rel="stylesheet" integrity="sha384-agp5dJUxwq6B3cZflEbOexGvolzKsopeIwQVoz2SjNog1k29nNJyFLAaRl5CqvZf" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
     <script src="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.3.2/fh-4.0.3/datatables.min.js" integrity="sha384-L+8cWDuJxLcD+Scp0vrgdZJQ7HjyU8EetzY2LOs2bvheLfsr+XRnxiigYxbjed6s" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <!-- Main CSS File -->
     <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet">
@@ -45,7 +54,7 @@
             <ul>
                 <li><a href="{{ route('dashboard') }}" class="{{ Route::currentRouteName() == 'dashboard' ? 'active' : '' }}">Home</a></li>
                 <li><a href="{{ route('kategori-wisata.index') }}" class="{{ Route::currentRouteName() == 'kategori-wisata.index' ? 'active' : '' }}">Kategori Wisata</a></li>
-                <li><a href="index.html#features">Data Wisata</a></li>
+                <li><a href="{{ route('wisata.index') }}" class="{{ Route::currentRouteName() == 'wisata.index' ? 'active' : '' }}">Data Wisata</a></li>
                 <li><a href="index.html#services">Data Rute</a></li>
             </ul>
             <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
@@ -103,9 +112,10 @@
 <script type="text/javascript">
     $(document).ready( function () {
         $('#datatables').DataTable();
+        $('.js-example-basic-multiple').select2();
     });
 </script>
-
+@stack('script')
 </body>
 
 </html>

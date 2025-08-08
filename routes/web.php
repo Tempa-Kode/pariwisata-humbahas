@@ -18,3 +18,12 @@ Route::prefix('kategori-wisata')->middleware(['auth'])->group(function () {
     Route::put('/update/{id}', [\App\Http\Controllers\KategoriWisata::class, 'update'])->name('kategori-wisata.update');
     Route::delete('/hapus/{id}', [\App\Http\Controllers\KategoriWisata::class, 'hapus'])->name('kategori-wisata.hapus');
 });
+
+Route::prefix('wisata')->middleware(['auth'])->group(function () {
+    Route::get('/', [\App\Http\Controllers\Wisata::class, 'index'])->name('wisata.index');
+    Route::get('/tambah', [\App\Http\Controllers\Wisata::class, 'formTambah'])->name('wisata.tambah');
+    Route::post('/simpan', [\App\Http\Controllers\Wisata::class, 'simpan'])->name('wisata.simpan');
+    Route::get('/edit/{id}', [\App\Http\Controllers\Wisata::class, 'edit'])->name('wisata.edit');
+    Route::put('/update/{id}', [\App\Http\Controllers\Wisata::class, 'update'])->name('wisata.update');
+//    Route::delete('/hapus/{id}', [\App\Http\Controllers\Wisata::class, 'hapus'])->name('wisata.hapus');
+});
