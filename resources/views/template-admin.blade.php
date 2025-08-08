@@ -55,7 +55,7 @@
                 <li><a href="{{ route('dashboard') }}" class="{{ Route::currentRouteName() == 'dashboard' ? 'active' : '' }}">Home</a></li>
                 <li><a href="{{ route('kategori-wisata.index') }}" class="{{ Route::currentRouteName() == 'kategori-wisata.index' ? 'active' : '' }}">Kategori Wisata</a></li>
                 <li><a href="{{ route('wisata.index') }}" class="{{ Route::currentRouteName() == 'wisata.index' ? 'active' : '' }}">Data Wisata</a></li>
-                <li><a href="index.html#services">Data Rute</a></li>
+                <li><a href="{{ route('rute.index') }}" class="{{ Route::currentRouteName() == 'rute.index' ? 'active' : '' }}">Data Rute</a></li>
             </ul>
             <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>

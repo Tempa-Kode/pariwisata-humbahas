@@ -27,3 +27,12 @@ Route::prefix('wisata')->middleware(['auth'])->group(function () {
     Route::put('/update/{id}', [\App\Http\Controllers\Wisata::class, 'update'])->name('wisata.update');
     Route::delete('/hapus/{id}', [\App\Http\Controllers\Wisata::class, 'hapus'])->name('wisata.hapus');
 });
+
+Route::prefix('rute')->middleware(['auth'])->group(function () {
+    Route::get('/', [\App\Http\Controllers\Rute::class, 'index'])->name('rute.index');
+    Route::get('/tambah', [\App\Http\Controllers\Rute::class, 'formTambah'])->name('rute.tambah');
+    Route::post('/simpan', [\App\Http\Controllers\Rute::class, 'simpan'])->name('rute.simpan');
+    Route::get('/edit/{id}', [\App\Http\Controllers\Rute::class, 'edit'])->name('rute.edit');
+    Route::put('/update/{id}', [\App\Http\Controllers\Rute::class, 'update'])->name('rute.update');
+    Route::delete('/hapus/{id}', [\App\Http\Controllers\Rute::class, 'hapus'])->name('rute.hapus');
+});
