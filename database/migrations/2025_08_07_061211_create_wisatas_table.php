@@ -14,15 +14,14 @@ return new class extends Migration
         Schema::create('wisata', function (Blueprint $table) {
             $table->id('id_wisata');
             $table->string('nama_wisata', 100);
-            $table->foreignId('id_kategori')->constrained('kategori', 'id_kategori')->onDelete('cascade');
             $table->string('lokasi', 150);
             $table->text('deskripsi');
             $table->string('foto');
-            $table->string('jam_operasional', 20);
-            $table->decimal('harga_tiket', 10, 2);
-            $table->decimal('biaya_parkir', 10, 2);
-            $table->text('fasilitas');
-            $table->text('peraturan');
+            $table->string('jam_operasional', 20)->nullable();
+            $table->string('harga_tiket', 100)->nullable();
+            $table->string('biaya_parkir', 100)->nullable();
+            $table->text('fasilitas')->nullable();
+            $table->text('peraturan')->nullable();
             $table->decimal('longitude', 10, 8);
             $table->decimal('latitude', 10, 8);
         });

@@ -12,7 +12,6 @@ class Wisata extends Model
 
     protected $fillable = [
         'nama_wisata',
-        'id_kategori',
         'lokasi',
         'deskripsi',
         'foto',
@@ -29,7 +28,7 @@ class Wisata extends Model
 
     public function kategori()
     {
-        return $this->belongsTo(Kategori::class, 'id_kategori', 'id_kategori');
+        return $this->belongsToMany(Kategori::class, 'kategori_wisata', 'id_wisata', 'id_kategori');
     }
 
 }

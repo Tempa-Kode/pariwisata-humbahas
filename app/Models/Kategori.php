@@ -16,6 +16,6 @@ class Kategori extends Model
 
     public function wisata()
     {
-        return $this->hasMany(Wisata::class, 'id_kategori', 'id_kategori');
+        return $this->belongsToMany(Wisata::class, 'kategori_wisata', 'id_kategori', 'id_wisata');
     }
 }
