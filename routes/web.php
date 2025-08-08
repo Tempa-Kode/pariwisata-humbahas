@@ -9,7 +9,7 @@ Route::get('/', function () {
 Route::get('/login', [App\Http\Controllers\Login::class, 'halamanLogin'])->name('login');
 Route::post('/login', [App\Http\Controllers\Login::class, 'prosesLogin'])->name('login.proses');
 Route::post('/logout', [\App\Http\Controllers\Login::class, 'logout'])->name('logout');
-Route::get('/beranda', [\App\Http\Controllers\Login::class, 'halamanBeranda'])->middleware('auth')->name('beranda');
+Route::get('/dashboard', [\App\Http\Controllers\Login::class, 'halamanDashboard'])->middleware('auth')->name('dashboard');
 
 Route::prefix('kategori-wisata')->middleware(['auth'])->group(function () {
     Route::get('/', [\App\Http\Controllers\KategoriWisata::class, 'index'])->name('kategori-wisata.index');

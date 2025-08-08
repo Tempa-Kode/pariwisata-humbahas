@@ -30,7 +30,7 @@ class Login extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
-            return redirect()->route('beranda');
+            return redirect()->route('/beranda');
         }
 
         return back()->with('error', 'Login gagal, silakan coba lagi.');
@@ -47,7 +47,7 @@ class Login extends Controller
         return redirect('/');
     }
 
-    public function halamanBeranda() {
+    public function halamanDashboard() {
         return view('beranda');
     }
 }
