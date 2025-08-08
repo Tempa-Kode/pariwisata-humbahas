@@ -33,8 +33,8 @@
                             <td>{{ $loop->iteration }}</td>
                             <td>{{ $item->lokasiAsal->nama_wisata }}</td>
                             <td>{{ $item->lokasiTujuan->nama_wisata }}</td>
-                            <td>{{ $item->jarak }} Km</td>
-                            <td>{{ $item->waktu_tempuh }} Jam</td>
+                            <td>{{ $item->jarak }}</td>
+                            <td>{{ $item->waktu_tempuh }}</td>
                             <td>
                                 <a href="{{ route('rute.edit', $item->id_rute) }}" class="btn btn-warning btn-sm">Edit</a>
                                 <form action="{{ route('rute.hapus', $item->id_rute) }}" method="POST" class="d-inline">
