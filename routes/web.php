@@ -25,5 +25,5 @@ Route::prefix('wisata')->middleware(['auth'])->group(function () {
     Route::post('/simpan', [\App\Http\Controllers\Wisata::class, 'simpan'])->name('wisata.simpan');
     Route::get('/edit/{id}', [\App\Http\Controllers\Wisata::class, 'edit'])->name('wisata.edit');
     Route::put('/update/{id}', [\App\Http\Controllers\Wisata::class, 'update'])->name('wisata.update');
-//    Route::delete('/hapus/{id}', [\App\Http\Controllers\Wisata::class, 'hapus'])->name('wisata.hapus');
+    Route::delete('/hapus/{id}', [\App\Http\Controllers\Wisata::class, 'hapus'])->name('wisata.hapus');
 });

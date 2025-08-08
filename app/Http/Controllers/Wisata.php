@@ -95,4 +95,11 @@ class Wisata extends Controller
 
         return redirect()->route('wisata.index')->with('success', 'Wisata berhasil diperbarui.');
     }
+
+    public function hapus($id) {
+        $wisata = \App\Models\Wisata::findOrFail($id);
+        $wisata->kategori()->detach();
+        $wisata->delete();
+        return redirect()->route('wisata.index')->with('success', 'Wisata berhasil dihapus.');
+    }
 }

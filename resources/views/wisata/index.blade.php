@@ -39,7 +39,7 @@
                             </td>
                             <td>
                                 <a href="{{ route('wisata.edit', $item->id_wisata) }}" class="btn btn-warning btn-sm">Edit</a>
-                                <form action="" method="POST" class="d-inline">
+                                <form action="{{ route('wisata.hapus', $item->id_wisata) }}" method="POST" class="d-inline">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Yakin ingin menghapus kategori ini?')">Hapus</button>
