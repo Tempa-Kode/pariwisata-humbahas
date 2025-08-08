@@ -20,17 +20,15 @@ class Rute extends Controller
         $validasi = $request->validate([
             'lokasi_asal' => 'required|exists:wisata,id_wisata',
             'lokasi_tujuan' => 'required|exists:wisata,id_wisata',
-            'jarak' => 'required|numeric',
-            'waktu_tempuh' => 'required|numeric',
+            'jarak' => 'required',
+            'waktu_tempuh' => 'required',
         ], [
             'lokasi_asal.required' => 'Lokasi asal harus diisi.',
             'lokasi_asal.exists' => 'Lokasi asal tidak ditemukan.',
             'lokasi_tujuan.required' => 'Lokasi tujuan harus diisi.',
             'lokasi_tujuan.exists' => 'Lokasi tujuan tidak ditemukan.',
             'jarak.required' => 'Jarak harus diisi.',
-            'jarak.numeric' => 'Jarak harus berupa angka.',
             'waktu_tempuh.required' => 'Waktu tempuh harus diisi.',
-            'waktu_tempuh.numeric' => 'Waktu tempuh harus berupa angka.',
         ]);
 
         \App\Models\Rute::create($validasi);
@@ -47,17 +45,15 @@ class Rute extends Controller
         $validasi = $request->validate([
             'lokasi_asal' => 'required|exists:wisata,id_wisata',
             'lokasi_tujuan' => 'required|exists:wisata,id_wisata',
-            'jarak' => 'required|numeric',
-            'waktu_tempuh' => 'required|numeric',
+            'jarak' => 'required',
+            'waktu_tempuh' => 'required',
         ], [
             'lokasi_asal.required' => 'Lokasi asal harus diisi.',
             'lokasi_asal.exists' => 'Lokasi asal tidak ditemukan.',
             'lokasi_tujuan.required' => 'Lokasi tujuan harus diisi.',
             'lokasi_tujuan.exists' => 'Lokasi tujuan tidak ditemukan.',
             'jarak.required' => 'Jarak harus diisi.',
-            'jarak.numeric' => 'Jarak harus berupa angka.',
             'waktu_tempuh.required' => 'Waktu tempuh harus diisi.',
-            'waktu_tempuh.numeric' => 'Waktu tempuh harus berupa angka.',
         ]);
 
         $rute = \App\Models\Rute::findOrFail($id);

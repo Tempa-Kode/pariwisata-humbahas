@@ -49,14 +49,14 @@
                 </div>
                 <div class="mb-3">
                     <label for="jarak" class="form-label">Jarak</label>
-                    <input type="number" step="any" class="form-control @error('jarak') is-invalid @enderror" id="jarak" name="jarak" value="{{ old('jarak') }}" required>
+                    <input type="text" class="form-control @error('jarak') is-invalid @enderror" id="jarak" name="jarak" value="{{ old('jarak') }}" required>
                     @error('jarak')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
                 <div class="mb-3">
                     <label for="waktu_tempuh" class="form-label">Waktu</label>
-                    <input type="number" step="any" class="form-control @error('waktu_tempuh') is-invalid @enderror" id="waktu_tempuh" name="waktu_tempuh" value="{{ old('waktu_tempuh') }}" required>
+                    <input type="text" class="form-control @error('waktu_tempuh') is-invalid @enderror" id="waktu_tempuh" name="waktu_tempuh" value="{{ old('waktu_tempuh') }}" required>
                     @error('waktu_tempuh')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
