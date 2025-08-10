@@ -2,9 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [App\Http\Controllers\PengunjungController::class, 'index'])->name('pengunjung.index');
 
 Route::get('/login', [App\Http\Controllers\Login::class, 'halamanLogin'])->name('login');
 Route::post('/login', [App\Http\Controllers\Login::class, 'prosesLogin'])->name('login.proses');
