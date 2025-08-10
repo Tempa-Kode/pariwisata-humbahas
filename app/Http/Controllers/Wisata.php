@@ -20,6 +20,7 @@ class Wisata extends Controller
     public function simpan(Request $request) {
         $data = $request->validate([
             'nama_wisata' => 'required|string|max:255',
+            'destinasi_unggulan' => 'nullable|boolean',
             'id_kategori.*' => 'required|exists:kategori,id_kategori',
             'lokasi' => 'required|string|max:150',
             'deskripsi' => 'required|string',
@@ -41,6 +42,8 @@ class Wisata extends Controller
             'longitude.required' => 'Longitude harus diisi.',
             'latitude.required' => 'Latitude harus diisi.',
         ]);
+
+        $data['destinasi_unggulan'] = $request->has('destinasi_unggulan') ? 1 : 0;
 
         if ($request->hasFile('foto')) {
             $file = $request->file('foto');
@@ -70,6 +73,7 @@ class Wisata extends Controller
 
         $data = $request->validate([
             'nama_wisata' => 'required|string|max:255',
+            'destinasi_unggulan' => 'nullable|boolean',
             'id_kategori.*' => 'required|exists:kategori,id_kategori',
             'lokasi' => 'required|string|max:150',
             'deskripsi' => 'required|string',
@@ -82,6 +86,8 @@ class Wisata extends Controller
             'longitude' => 'required|numeric',
             'latitude' => 'required|numeric',
         ]);
+
+        $data['destinasi_unggulan'] = $request->has('destinasi_unggulan') ? 1 : 0;
 
         if ($request->hasFile('foto')) {
             $file = $request->file('foto');

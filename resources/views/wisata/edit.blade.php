@@ -23,6 +23,25 @@
                             </div>
                         </div>
                         <div class="row mb-3">
+                            <label for="destinasi_unggulan" class="col-sm-3 col-form-label">Destinasi Unggulan</label>
+                            <div class="col-sm-9">
+                                <div class="form-check">
+                                    <input class="form-check-input @error('destinasi_unggulan') is-invalid @enderror"
+                                           type="checkbox"
+                                           value="1"
+                                           id="destinasi_unggulan"
+                                           name="destinasi_unggulan"
+                                        {{ old('destinasi_unggulan', $wisata->destinasi_unggulan) == 1 ? 'checked' : '' }}>
+                                    <label class="form-check-label ms-1" for="destinasi_unggulan">
+                                        Ya
+                                    </label>
+                                    @error('destinasi_unggulan')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
                             <label for="lokasi" class="col-sm-3 col-form-label">Alamat<span class="text-danger">*</span></label>
                             <div class="col-sm-9">
                                 <input type="text" class="form-control @error('lokasi') is-invalid @enderror" id="lokasi" name="lokasi" value="{{ old('lokasi', $wisata->lokasi) }}">
