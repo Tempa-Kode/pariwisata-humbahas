@@ -24,6 +24,12 @@
     <link href="{{ asset('assets/vendor/glightbox/css/glightbox.min.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet">
 
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
     <!-- Main CSS File -->
     <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet">
 </head>
@@ -41,7 +47,7 @@
         <nav id="navmenu" class="navmenu">
             <ul>
                 <li><a href="{{ route('pengunjung.index') }}" class="{{ Route::currentRouteName() == 'pengunjung.index' ? 'active' : '' }}">Beranda</a></li>
-                <li><a href="">Wisata</a></li>
+                <li><a href="{{ route('pengunjung.wisata') }}" class="{{ Route::currentRouteName() == 'pengunjung.wisata' ? 'active' : '' }}">Wisata</a></li>
                 <li><a href="">Cari Rute</a></li>
                 <li><a href="">Tentang Kami</a></li>
             </ul>
@@ -69,9 +75,13 @@
 <script src="{{ asset('assets/vendor/aos/aos.js') }}"></script>
 <script src="{{ asset('assets/vendor/glightbox/js/glightbox.min.js') }}"></script>
 <script src="{{ asset('assets/vendor/swiper/swiper-bundle.min.js') }}"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
 
 <!-- Main JS File -->
 <script src="{{ asset('assets/js/main.js') }}"></script>
+@stack('script')
 
 </body>
 

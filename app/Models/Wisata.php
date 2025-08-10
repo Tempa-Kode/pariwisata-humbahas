@@ -32,4 +32,13 @@ class Wisata extends Model
         return $this->belongsToMany(Kategori::class, 'kategori_wisata', 'id_wisata', 'id_kategori');
     }
 
+    public function scopeFilter($query, array $filters)
+    {
+        $query->when($filters['wisata'] ?? false, function($query, $wisata) {
+            return $query->where('nama_wisata', 'like', '%' . $wisata . '%');
+        });
+
+        return $query;
+    }
+
 }

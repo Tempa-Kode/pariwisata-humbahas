@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [App\Http\Controllers\PengunjungController::class, 'index'])->name('pengunjung.index');
+Route::get('/destinasi-wisata', [App\Http\Controllers\PengunjungController::class, 'halamanWisata'])->name('pengunjung.wisata');
+Route::get('/destinasi-wisata/{id}', [App\Http\Controllers\PengunjungController::class, 'detailHalamanWisata'])->name('pengunjung.wisata.detail');
 
 Route::get('/login', [App\Http\Controllers\Login::class, 'halamanLogin'])->name('login');
 Route::post('/login', [App\Http\Controllers\Login::class, 'prosesLogin'])->name('login.proses');

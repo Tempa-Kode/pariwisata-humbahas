@@ -13,4 +13,19 @@ class PengunjungController extends Controller
             ->get();
         return view('pengunjung.index', compact('wisataUnggulan'));
     }
+
+    public function halamanWisata(Request $request)
+    {
+        $wisata = \App\Models\Wisata::filter([
+            'wisata' => $request->wisata
+        ])->with('kategori')->simplePaginate(10);
+
+        return view('pengunjung.wisata', compact('wisata'));
+    }
+
+    public function detailHalamanWisata($id)
+    {
+        $wisata = \App\Models\Wisata::findOrFail($id);
+        return view('pengunjung.detail_wisata', compact('wisata'));
+    }
 }
