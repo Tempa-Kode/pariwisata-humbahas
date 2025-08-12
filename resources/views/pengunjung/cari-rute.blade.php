@@ -1,11 +1,11 @@
-@extends('template-pengunjung')
-@section('title', 'Pariwisata Humbahas')
-@section('body')
+@extends("template-pengunjung")
+@section("title", "Pariwisata Humbahas")
+@section("body")
     <section id="services" class="services section light-background">
         <div class="container mb-4 mt-5" data-aos="fade-up">
-            <form action="" method="post">
+            <form action="{{ route("pengunjung.proses-rute") }}" method="post">
                 @csrf
-                @method('POST')
+                @method("POST")
                 <div class="row">
                     <div class="card py-5 shadow-sm">
                         <div class="row d-flex justify-content-center align-items-center flex-column gy-4">
@@ -16,16 +16,18 @@
                                 <div class="row mb-3">
                                     <label for="lokasiAwal" class="col-sm-3 col-form-label">Lokasi Awal</label>
                                     <div class="col-sm-9">
-                                        <input type="email" class="form-control" id="lokasiAwal">
+                                        <input type="text" class="form-control" id="lokasiAwal">
                                     </div>
                                 </div>
                                 <div class="row mb-4">
                                     <label for="lokasi_tujuan" class="col-sm-3 col-form-label">Lokasi Tujuan</label>
                                     <div class="col-sm-9">
-                                        <select class="form-select" name="lokasi_tujuan" id="lokasi_tujuan" data-placeholder="Pilih lokasi tujuan">
+                                        <select class="form-select" name="lokasi_tujuan" id="lokasi_tujuan"
+                                            data-placeholder="Pilih lokasi tujuan">
                                             <option value="" hidden="">Pilih Lokasi Tujuan</option>
                                             @forelse($wisata as $item)
-                                                <option value="{{ $item->id }}" data-lat="{{ $item->latitude }}" data-lng="{{ $item->longitude }}">
+                                                <option value="{{ $item->id_wisata }}" data-lat="{{ $item->latitude }}"
+                                                    data-lng="{{ $item->longitude }}">
                                                     {{ $item->nama_wisata }}
                                                 </option>
                                             @empty
@@ -46,7 +48,7 @@
     </section>
 @endsection
 
-@push('script')
+@push("script")
     <script type="text/javascript">
         $(document).ready(function() {
             dapatkanLokasiPengguna();
@@ -86,7 +88,7 @@
 
             // Menangani kesalahan lokasi
             function tanganiErrorLokasi(kesalahan) {
-                switch(kesalahan.code) {
+                switch (kesalahan.code) {
                     case kesalahan.PERMISSION_DENIED:
                         $('#lokasiAwal').val('Akses lokasi ditolak. Mohon izinkan akses lokasi.');
                         // Menambahkan tombol untuk meminta izin kembali
