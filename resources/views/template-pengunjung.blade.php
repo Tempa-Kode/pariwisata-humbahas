@@ -48,7 +48,7 @@
             <ul>
                 <li><a href="{{ route('pengunjung.index') }}" class="{{ Route::currentRouteName() == 'pengunjung.index' ? 'active' : '' }}">Beranda</a></li>
                 <li><a href="{{ route('pengunjung.wisata') }}" class="{{ Route::currentRouteName() == 'pengunjung.wisata' ? 'active' : '' }}">Wisata</a></li>
-                <li><a href="">Cari Rute</a></li>
+                <li><a href="{{ route('pengunjung.cari-rute') }}" class="{{ Route::currentRouteName() == 'pengunjung.cari-rute' ? 'active' : '' }}">Cari Rute</a></li>
                 <li><a href="">Tentang Kami</a></li>
             </ul>
             <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
