@@ -11,8 +11,8 @@
                 <h1 data-aos="fade-up"><span>Humbang Hasundutan</span></h1>
                 <p data-aos="fade-up" data-aos-delay="100">Temukan Destinasi Menarik dan Rute Tercepat untuk mencapainya<br></p>
                 <div class="d-flex gap-5" data-aos="fade-up" data-aos-delay="200">
-                    <a href="#about" class="btn-get-started">Lihat Daftar Wisata</a>
-                    <a href="#about" class="btn-get-started">Cari Rute Terdekat</a>
+                    <a href="{{ route('pengunjung.wisata') }}" class="btn-get-started">Lihat Daftar Wisata</a>
+                    <a href="{{ route('pengunjung.cari-rute') }}" class="btn-get-started">Cari Rute Terdekat</a>
                 </div>
             </div>
         </div>
@@ -32,7 +32,9 @@
                     <div class="card h-100 shadow-sm">
                         <img src="{{ asset($item->foto) }}" class="card-img-top" alt="..." style="width:100%;height:200px;object-fit:cover;">
                         <div class="card-body">
-                            <h5 class="card-title fw-bold">{{ $item->nama_wisata }}</h5>
+                            <a href="{{ route('pengunjung.wisata.detail', $item->id_wisata) }}">
+                                <h5 class="card-title fw-bold">{{ $item->nama_wisata }}</h5>
+                            </a>
                             <p class="card-text text-opacity-50">{{ $item->lokasi }}</p>
                         </div>
                     </div>
