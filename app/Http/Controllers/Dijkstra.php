@@ -81,24 +81,50 @@ class Dijkstra extends Controller
         // Rekonstruksi jalur terpendek
         $jalurTerpendek = $this->rekonstruksiJalur($jalurSebelumnya, $wisataAwal->id_wisata, $wisataTujuan->id_wisata);
 
-        // Jika tidak ada jalur langsung, gunakan jalur alternatif dengan Haversine
+        // Jika tidak ada jalur langsung, gunakan jalur alternatif dengan routing jalan sebenarnya
         if (empty($jalurTerpendek) || $jarak[$wisataTujuan->id_wisata] === PHP_INT_MAX) {
             $jalurTerpendek = $this->buatJalurAlternatif($wisataAwal, $wisataTujuan, $semuaWisata);
-            $jarak[$wisataTujuan->id_wisata] = $this->hitungJarakHaversine(
+
+            // Coba gunakan jarak jalan sebenarnya, fallback ke Haversine jika gagal
+            $jarakRuteWisata = $this->hitungJarakJalanSebenarnya(
                 $wisataAwal->latitude, $wisataAwal->longitude,
                 $wisataTujuan->latitude, $wisataTujuan->longitude
             );
+
+            if ($jarakRuteWisata === null) {
+                $jarakRuteWisata = $this->hitungJarakHaversine(
+                    $wisataAwal->latitude, $wisataAwal->longitude,
+                    $wisataTujuan->latitude, $wisataTujuan->longitude
+                );
+            }
+
+            $jarak[$wisataTujuan->id_wisata] = $jarakRuteWisata;
         }
+
+        // Hitung jarak dari posisi pengguna ke wisata terdekat menggunakan routing jalan sebenarnya
+        $jarakKeWisataAwal = $this->hitungJarakJalanSebenarnya(
+            $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+            $wisataAwal->latitude, $wisataAwal->longitude
+        );
+
+        // Jika API routing gagal, fallback ke Haversine
+        if ($jarakKeWisataAwal === null) {
+            $jarakKeWisataAwal = $this->hitungJarakHaversine(
+                $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+                $wisataAwal->latitude, $wisataAwal->longitude
+            );
+        }
+
+        // Total jarak = jarak dari posisi pengguna ke wisata terdekat + jarak rute wisata
+        $totalJarak = $jarakKeWisataAwal + $jarak[$wisataTujuan->id_wisata];
 
         return [
             'jalur' => $jalurTerpendek,
-            'jarak_total' => $jarak[$wisataTujuan->id_wisata],
-            'waktu_tempuh' => $this->estimasiWaktuTempuh($jarak[$wisataTujuan->id_wisata]),
+            'jarak_total' => $totalJarak,
+            'waktu_tempuh' => $this->estimasiWaktuTempuh($totalJarak),
             'wisata_awal' => $wisataAwal,
-            'jarak_ke_wisata_awal' => $this->hitungJarakHaversine(
-                $lokasiAwal['latitude'], $lokasiAwal['longitude'],
-                $wisataAwal->latitude, $wisataAwal->longitude
-            )
+            'jarak_ke_wisata_awal' => $jarakKeWisataAwal,
+            'jarak_rute_wisata' => $jarak[$wisataTujuan->id_wisata]
         ];
     }
 
@@ -173,6 +199,32 @@ class Dijkstra extends Controller
         $c = 2 * atan2(sqrt($a), sqrt(1-$a));
 
         return $radiusBumi * $c;
+    }
+
+    /**
+     * Hitung jarak menggunakan routing jalan sebenarnya via OSRM API
+     * Return null jika gagal, sehingga bisa fallback ke Haversine
+     */
+    private function hitungJarakJalanSebenarnya($lat1, $lon1, $lat2, $lon2)
+    {
+        try {
+            $urlOSRM = "http://router.project-osrm.org/route/v1/driving/"
+                     . $lon1 . "," . $lat1 . ";"
+                     . $lon2 . "," . $lat2
+                     . "?overview=false";
+
+            $responOSRM = $this->panggilAPIRouting($urlOSRM);
+
+            if ($responOSRM && isset($responOSRM['routes'][0]['distance'])) {
+                // Konversi dari meter ke kilometer
+                return round($responOSRM['routes'][0]['distance'] / 1000, 2);
+            }
+
+            return null;
+
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     private function cariSimpulJarakTerpendek($jarak, $simpulBelumDikunjungi)

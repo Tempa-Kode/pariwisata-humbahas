@@ -14,18 +14,23 @@
                                     <div class="row mb-3">
                                         <div class="col-4"><strong>Lokasi Awal</strong></div>
                                         <div class="col-1">:</div>
-                                        <div class="col-7" id="namaLokasiAwal">{{ $hasilRute["wisata_awal"]->nama_wisata }}
-                                        </div>
+                                        <div class="col-7" id="namaLokasiAwal">Lokasi Anda Saat Ini</div>
                                     </div>
                                     <div class="row mb-3">
                                         <div class="col-4"><strong>Lokasi Tujuan</strong></div>
                                         <div class="col-1">:</div>
                                         <div class="col-7">{{ $wisataTujuan->nama_wisata }}</div>
                                     </div>
+                                    {{-- <div class="row mb-3">
+                                        <div class="col-4"><strong>Titik Transit Terdekat</strong></div>
+                                        <div class="col-1">:</div>
+                                        <div class="col-7">{{ $hasilRute["wisata_awal"]->nama_wisata }}
+                                            ({{ number_format($hasilRute["jarak_ke_wisata_awal"], 2) }} km dari Anda)</div>
+                                    </div> --}}
                                     <div class="row mb-3">
                                         <div class="col-4"><strong>Jarak</strong></div>
                                         <div class="col-1">:</div>
-                                        <div class="col-7">{{ number_format($hasilRute["jarak_total"], 2) }} km</div>
+                                        <div class="col-7">{{ number_format($hasilRute["jarak_total"], 2) }} km </div>
                                     </div>
                                     <div class="row mb-3">
                                         <div class="col-4"><strong>Waktu Tempuh</strong></div>
@@ -74,7 +79,7 @@
             // Tampilkan loading indicator
             $('#peta').html(
                 '<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Memuat peta...</span></div><span class="ms-2">Memuat peta dan rute...</span></div>'
-                );
+            );
 
             // Data dari server
             const lokasiAwal = {
@@ -130,7 +135,7 @@
                 }).addTo(peta);
                 markerWisataAwal.bindPopup('<b>Titik Awal: ' + wisataAwal.nama +
                     '</b><br>Jarak dari lokasi Anda: {{ number_format($hasilRute["jarak_ke_wisata_awal"], 2) }} km'
-                    );
+                );
 
                 // Marker untuk wisata tujuan
                 const markerWisataTujuan = L.marker([wisataTujuan.lat, wisataTujuan.lng], {
