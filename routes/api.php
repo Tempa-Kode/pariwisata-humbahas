@@ -8,5 +8,5 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('/wisata', function() {
-    return \App\Models\Wisata::all();
+    return \App\Models\Wisata::with('kategori')->get();
 });
