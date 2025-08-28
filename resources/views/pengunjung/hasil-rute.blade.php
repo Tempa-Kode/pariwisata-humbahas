@@ -14,12 +14,20 @@
                                     <div class="row mb-3">
                                         <div class="col-4"><strong>Lokasi Awal</strong></div>
                                         <div class="col-1">:</div>
-                                        <div class="col-7" id="namaLokasiAwal">Lokasi Anda Saat Ini</div>
+                                        <div class="col-7" id="namaLokasiAwal">
+                                            {{ $namaLokasiAwal }}
+                                            <br><small class="text-muted">({{ number_format($lokasiAwal["latitude"], 6) }},
+                                                {{ number_format($lokasiAwal["longitude"], 6) }})</small>
+                                        </div>
                                     </div>
                                     <div class="row mb-3">
                                         <div class="col-4"><strong>Lokasi Tujuan</strong></div>
                                         <div class="col-1">:</div>
-                                        <div class="col-7">{{ $wisataTujuan->nama_wisata }}</div>
+                                        <div class="col-7">
+                                            {{ $wisataTujuan->nama_wisata }}
+                                            <br><small class="text-muted">({{ number_format($wisataTujuan->latitude, 6) }},
+                                                {{ number_format($wisataTujuan->longitude, 6) }})</small>
+                                        </div>
                                     </div>
                                     {{-- <div class="row mb-3">
                                         <div class="col-4"><strong>Titik Transit Terdekat</strong></div>
@@ -122,7 +130,7 @@
                         iconAnchor: [10, 10]
                     })
                 }).addTo(peta);
-                markerLokasiAwal.bindPopup('<b>Lokasi Anda Saat Ini</b>').openPopup();
+                markerLokasiAwal.bindPopup('<b>{{ $namaLokasiAwal }}</b>').openPopup();
 
                 // Marker untuk wisata awal terdekat
                 const markerWisataAwal = L.marker([wisataAwal.lat, wisataAwal.lng], {

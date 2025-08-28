@@ -16,7 +16,30 @@
                                 <div class="row mb-3">
                                     <label for="lokasiAwal" class="col-sm-3 col-form-label">Lokasi Awal</label>
                                     <div class="col-sm-9">
-                                        <input type="text" class="form-control" id="lokasiAwal">
+                                        <div class="input-group">
+                                            <select class="form-select" name="lokasi_awal" id="lokasiAwal"
+                                                data-placeholder="Pilih lokasi awal">
+                                                <option value="" hidden="">Pilih Lokasi Awal</option>
+                                                <option value="current" id="currentLocationOption">Lokasi Saat Ini
+                                                    (Mendapatkan lokasi...)</option>
+                                                <option value="dolok_sanggul" data-lat="2.2915" data-lng="98.9565">Pusat
+                                                    Dolok Sanggul</option>
+                                                @forelse($wisata as $item)
+                                                    <option value="{{ $item->id_wisata }}" data-lat="{{ $item->latitude }}"
+                                                        data-lng="{{ $item->longitude }}">
+                                                        {{ $item->nama_wisata }}
+                                                    </option>
+                                                @empty
+                                                    <option value="">Tidak ada data wisata</option>
+                                                @endforelse
+                                            </select>
+                                            <button type="button" class="btn btn-outline-primary" id="refreshLocation"
+                                                title="Refresh lokasi GPS">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">Tip: Untuk akurasi terbaik, pastikan GPS aktif dan berada
+                                            di area terbuka</small>
                                     </div>
                                 </div>
                                 <div class="row mb-4">
@@ -27,7 +50,7 @@
                                             <option value="" hidden="">Pilih Lokasi Tujuan</option>
                                             @forelse($wisata as $item)
                                                 <option value="{{ $item->id_wisata }}" data-lat="{{ $item->latitude }}"
-                                                    data-lng="{{ $item->longitude }}">
+                                                    data-lng="{{ $item->longitude }}" class="wisata-option">
                                                     {{ $item->nama_wisata }}
                                                 </option>
                                             @empty
@@ -51,81 +74,220 @@
 @push("script")
     <script type="text/javascript">
         $(document).ready(function() {
+            let currentLat = null;
+            let currentLng = null;
+
+            // Dapatkan lokasi pengguna saat halaman dimuat
             dapatkanLokasiPengguna();
+
+            // Event handler untuk tombol refresh lokasi
+            $('#refreshLocation').click(function() {
+                $(this).find('i').addClass('fa-spin');
+                $('#currentLocationOption').text('Lokasi Saat Ini (Mencari lokasi...)');
+                dapatkanLokasiPengguna();
+
+                // Hentikan animasi spin setelah 15 detik
+                setTimeout(() => {
+                    $(this).find('i').removeClass('fa-spin');
+                }, 15000);
+            });
+
+            // Event handler untuk perubahan dropdown lokasi awal
+            $('#lokasiAwal').change(function() {
+                const selectedOption = $(this).find('option:selected');
+                const value = selectedOption.val();
+
+                if (value === 'current') {
+                    // Gunakan koordinat lokasi saat ini
+                    if (currentLat && currentLng) {
+                        $('#latitude').val(currentLat);
+                        $('#longitude').val(currentLng);
+                    }
+                } else if (value === 'dolok_sanggul') {
+                    // Gunakan koordinat Pusat Dolok Sanggul
+                    $('#latitude').val(selectedOption.data('lat'));
+                    $('#longitude').val(selectedOption.data('lng'));
+                } else if (value) {
+                    // Gunakan koordinat wisata yang dipilih
+                    $('#latitude').val(selectedOption.data('lat'));
+                    $('#longitude').val(selectedOption.data('lng'));
+                } else {
+                    // Reset koordinat jika tidak ada yang dipilih
+                    $('#latitude').val('');
+                    $('#longitude').val('');
+                }
+
+                // Update pilihan lokasi tujuan
+                updatePilihanTujuan();
+            });
+
+            // Fungsi untuk mengupdate pilihan lokasi tujuan
+            function updatePilihanTujuan() {
+                const lokasiAwalValue = $('#lokasiAwal').val();
+
+                // Reset semua opsi wisata di lokasi tujuan
+                $('#lokasi_tujuan .wisata-option').prop('disabled', false);
+
+                // Disable opsi yang sama dengan lokasi awal (jika memilih wisata)
+                if (lokasiAwalValue && lokasiAwalValue !== 'current' && lokasiAwalValue !== 'dolok_sanggul') {
+                    $(`#lokasi_tujuan option[value="${lokasiAwalValue}"]`).prop('disabled', true);
+
+                    // Jika lokasi tujuan yang dipilih sama dengan lokasi awal, reset pilihan
+                    if ($('#lokasi_tujuan').val() === lokasiAwalValue) {
+                        $('#lokasi_tujuan').val('');
+                    }
+                }
+            }
 
             function dapatkanLokasiPengguna() {
                 if (navigator.geolocation) {
-                    // Menampilkan indikator loading
-                    $('#lokasiAwal').val('Mendapatkan lokasi...');
+                    // Tampilkan loading dengan akurasi info
+                    $('#currentLocationOption').text('Lokasi Saat Ini (Mencari lokasi yang akurat...)');
 
                     navigator.geolocation.getCurrentPosition(
                         // Callback sukses
                         function(posisi) {
                             const lintang = posisi.coords.latitude;
                             const bujur = posisi.coords.longitude;
+                            const akurasi = posisi.coords.accuracy;
 
-                            // Mengatur input tersembunyi
-                            $('#latitude').val(lintang);
-                            $('#longitude').val(bujur);
+                            console.log('Koordinat ditemukan:', {
+                                latitude: lintang,
+                                longitude: bujur,
+                                accuracy: akurasi + ' meter'
+                            });
 
-                            dapatkanNamaLokasi(lintang, bujur);
+                            // Simpan koordinat lokasi saat ini
+                            currentLat = lintang;
+                            currentLng = bujur;
+
+                            // Update teks opsi lokasi saat ini
+                            dapatkanNamaLokasi(lintang, bujur, akurasi);
+
+                            // Set sebagai pilihan default jika belum ada yang dipilih
+                            if ($('#lokasiAwal').val() === '') {
+                                $('#lokasiAwal').val('current');
+                                $('#latitude').val(lintang);
+                                $('#longitude').val(bujur);
+                            }
                         },
                         // Callback kesalahan
                         function(kesalahan) {
                             tanganiErrorLokasi(kesalahan);
                         },
-                        // Opsi - akurasi tinggi, tidak ada cache, batas waktu 5 detik
+                        // Opsi untuk akurasi maksimal
                         {
-                            enableHighAccuracy: true,
-                            maximumAge: 0,
-                            timeout: 5000
+                            enableHighAccuracy: true, // Gunakan GPS jika tersedia
+                            maximumAge: 0, // Jangan gunakan cache lokasi
+                            timeout: 15000 // Perpanjang timeout untuk akurasi lebih baik
                         }
                     );
+
+                    // Coba watchPosition untuk mendapatkan lokasi yang lebih akurat
+                    if (navigator.geolocation.watchPosition) {
+                        let watchId = navigator.geolocation.watchPosition(
+                            function(posisi) {
+                                const lintang = posisi.coords.latitude;
+                                const bujur = posisi.coords.longitude;
+                                const akurasi = posisi.coords.accuracy;
+
+                                // Jika mendapat akurasi yang lebih baik (< 50 meter), update koordinat
+                                if (akurasi < 50) {
+                                    console.log('Lokasi yang lebih akurat ditemukan:', {
+                                        latitude: lintang,
+                                        longitude: bujur,
+                                        accuracy: akurasi + ' meter'
+                                    });
+
+                                    currentLat = lintang;
+                                    currentLng = bujur;
+
+                                    // Update koordinat jika lokasi saat ini yang dipilih
+                                    if ($('#lokasiAwal').val() === 'current') {
+                                        $('#latitude').val(lintang);
+                                        $('#longitude').val(bujur);
+                                    }
+
+                                    dapatkanNamaLokasi(lintang, bujur, akurasi);
+
+                                    // Hentikan watch setelah mendapat akurasi yang baik
+                                    navigator.geolocation.clearWatch(watchId);
+                                }
+                            },
+                            function(error) {
+                                console.log('Watch position error:', error);
+                            }, {
+                                enableHighAccuracy: true,
+                                maximumAge: 0,
+                                timeout: 10000
+                            }
+                        );
+
+                        // Hentikan watch setelah 30 detik
+                        setTimeout(function() {
+                            navigator.geolocation.clearWatch(watchId);
+                        }, 30000);
+                    }
                 } else {
-                    $('#lokasiAwal').val('Geolocation tidak didukung oleh browser ini');
+                    $('#currentLocationOption').text('Geolocation tidak didukung oleh browser ini');
                 }
             }
 
             // Menangani kesalahan lokasi
             function tanganiErrorLokasi(kesalahan) {
+                let errorMessage = '';
                 switch (kesalahan.code) {
                     case kesalahan.PERMISSION_DENIED:
-                        $('#lokasiAwal').val('Akses lokasi ditolak. Mohon izinkan akses lokasi.');
-                        // Menambahkan tombol untuk meminta izin kembali
-                        $('<button type="button" class="btn btn-sm btn-primary mt-2">Izinkan Akses Lokasi</button>')
-                            .insertAfter('#lokasiAwal')
-                            .click(function() {
-                                $(this).remove();
-                                dapatkanLokasiPengguna();
-                            });
+                        errorMessage = 'Akses lokasi ditolak';
                         break;
                     case kesalahan.POSITION_UNAVAILABLE:
-                        $('#lokasiAwal').val('Informasi lokasi tidak tersedia');
+                        errorMessage = 'Informasi lokasi tidak tersedia';
                         break;
                     case kesalahan.TIMEOUT:
-                        $('#lokasiAwal').val('Waktu permintaan lokasi habis');
+                        errorMessage = 'Waktu permintaan lokasi habis';
                         break;
                     case kesalahan.UNKNOWN_ERROR:
-                        $('#lokasiAwal').val('Terjadi kesalahan saat mendapatkan lokasi');
+                        errorMessage = 'Terjadi kesalahan saat mendapatkan lokasi';
                         break;
                 }
+                $('#currentLocationOption').text(`Lokasi Saat Ini (${errorMessage})`);
             }
 
             // Mendapatkan nama lokasi menggunakan reverse geocoding
-            function dapatkanNamaLokasi(lintang, bujur) {
+            function dapatkanNamaLokasi(lintang, bujur, akurasi) {
                 $.ajax({
                     url: `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lintang}&lon=${bujur}&zoom=18&addressdetails=1`,
                     type: 'GET',
                     dataType: 'json',
                     success: function(data) {
                         if (data && data.display_name) {
-                            $('#lokasiAwal').val(data.display_name);
+                            // Ambil bagian yang relevan dari nama alamat
+                            const address = data.address || {};
+                            const shortName = address.village || address.town || address.city || address
+                                .county || 'Lokasi Saat Ini';
+
+                            // Tampilkan dengan info akurasi jika tersedia
+                            let locationText = `Lokasi Saat Ini (${shortName})`;
+                            if (akurasi) {
+                                locationText += ` - Akurasi: ${Math.round(akurasi)}m`;
+                            }
+                            $('#currentLocationOption').text(locationText);
                         } else {
-                            $('#lokasiAwal').val(`Lokasi saat ini (${lintang}, ${bujur})`);
+                            let locationText =
+                                `Lokasi Saat Ini (${lintang.toFixed(6)}, ${bujur.toFixed(6)})`;
+                            if (akurasi) {
+                                locationText += ` - Akurasi: ${Math.round(akurasi)}m`;
+                            }
+                            $('#currentLocationOption').text(locationText);
                         }
                     },
                     error: function() {
-                        $('#lokasiAwal').val(`Lokasi saat ini (${lintang}, ${bujur})`);
+                        let locationText =
+                            `Lokasi Saat Ini (${lintang.toFixed(6)}, ${bujur.toFixed(6)})`;
+                        if (akurasi) {
+                            locationText += ` - Akurasi: ${Math.round(akurasi)}m`;
+                        }
+                        $('#currentLocationOption').text(locationText);
                     }
                 });
             }

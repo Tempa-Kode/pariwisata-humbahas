@@ -15,17 +15,45 @@ class Dijkstra extends Controller
 
     public function cariRuteTerpendek(Request $request)
     {
+        // Validasi input
+        $request->validate([
+            'lokasi_awal' => 'required',
+            'lokasi_tujuan' => 'required',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric'
+        ]);
+
         $lokasiAwal = [
             'latitude' => $request->latitude,
             'longitude' => $request->longitude
         ];
+
+        // Tentukan nama lokasi awal berdasarkan pilihan
+        $namaLokasiAwal = $this->tentukanNamaLokasiAwal($request->lokasi_awal);
 
         $wisataTujuan = Wisata::findOrFail($request->lokasi_tujuan);
 
         // Cari rute terpendek menggunakan algoritma Dijkstra
         $hasilRute = $this->algoritmaRuteTerpendek($lokasiAwal, $wisataTujuan);
 
-        return view('pengunjung.hasil-rute', compact('hasilRute', 'lokasiAwal', 'wisataTujuan'));
+        return view('pengunjung.hasil-rute', compact('hasilRute', 'lokasiAwal', 'namaLokasiAwal', 'wisataTujuan'));
+    }
+
+    private function tentukanNamaLokasiAwal($lokasiAwal)
+    {
+        switch ($lokasiAwal) {
+            case 'current':
+                return 'Lokasi Anda Saat Ini';
+            case 'dolok_sanggul':
+                return 'Pusat Dolok Sanggul';
+            default:
+                // Jika memilih wisata sebagai lokasi awal
+                if (is_numeric($lokasiAwal)) {
+                    $wisata = Wisata::find($lokasiAwal);
+                    return $wisata ? $wisata->nama_wisata : 'Lokasi Tidak Diketahui';
+                }
+                return 'Lokasi Tidak Diketahui';
+        }
     }
 
     private function algoritmaRuteTerpendek($lokasiAwal, $wisataTujuan)
