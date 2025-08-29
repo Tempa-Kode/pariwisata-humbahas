@@ -3,7 +3,7 @@
 @section('body')
     <section id="hero" class="hero section">
         <div class="hero-bg mb-5">
-            <img src="{{ asset('assets/img/hero-bg-light.webp') }}" alt="">
+            <img src="https://grapadinews.co.id/wp-content/uploads/2019/11/Welcome_gate_to_Humbang_Hasundutan_Sumatra_Utara_v._Sbb.jpg" alt="">
         </div>
         <div class="container text-center">
             <div class="d-flex flex-column justify-content-center align-items-center">
