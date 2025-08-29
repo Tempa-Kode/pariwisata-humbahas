@@ -11,7 +11,14 @@
                                 <i class="bi bi-arrow-left"></i> Kembali
                             </a>
                         </div>
-                        <div class="col-lg-7">
+                        <div class="col-md-6">
+                            @if($wisata->foto)
+                                <img src="{{ asset($wisata->foto) }}" alt="Foto Wisata" class="img-fluid rounded">
+                            @else
+                                <span class="text-muted">Tidak ada foto</span>
+                            @endif
+                        </div>
+                        <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Nama Wisata:</label>
                                 <div>{{ $wisata->nama_wisata }}</div>
@@ -26,16 +33,6 @@
                                     @foreach($wisata->kategori as $kat)
                                         <span class="badge bg-primary">{{ $kat->nama_kategori }}</span>
                                     @endforeach
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Foto:</label>
-                                <div>
-                                    @if($wisata->foto)
-                                        <img src="{{ asset($wisata->foto) }}" alt="Foto Wisata" class="img-fluid rounded" style="max-width:300px;">
-                                    @else
-                                        <span class="text-muted">Tidak ada foto</span>
-                                    @endif
                                 </div>
                             </div>
                             <div class="mb-3">
@@ -54,6 +51,8 @@
                                 <label class="form-label fw-bold">Fasilitas:</label>
                                 <div>{{ $wisata->fasilitas ?? '-' }}</div>
                             </div>
+                        </div>
+                        <div class="col-md-12">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Deskripsi:</label>
                                 <div>{{ $wisata->deskripsi }}</div>
@@ -62,8 +61,7 @@
                                 <label class="form-label fw-bold">Peraturan:</label>
                                 <div>{{ $wisata->peraturan ?? '-' }}</div>
                             </div>
-                        </div>
-                        <div class="col-lg-5">
+                            <a href="{{ route('pengunjung.cari-rute', ['tujuan' => $wisata->id_wisata]) }}" class="btn btn-success">Kunjungi Destinasi</a>
                             <div class="row mt-3 px-3 align-items-center">
                                 <div id="map" style="height: 350px"></div>
                             </div>
