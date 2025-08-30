@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FotoWisata;
 use App\Models\Kategori;
 use Illuminate\Http\Request;
 
@@ -107,5 +108,61 @@ class Wisata extends Controller
         $wisata->kategori()->detach();
         $wisata->delete();
         return redirect()->route('wisata.index')->with('success', 'Wisata berhasil dihapus.');
+    }
+
+    public function tambahFotoWisata(Request $request) {
+        $request->validate([
+            'id_wisata' => 'required|exists:wisata,id_wisata',
+            'foto.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'foto_ganti.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+        ]);
+
+        $id_wisata = $request->input('id_wisata');
+
+        // 1. Ganti foto lama jika ada input
+        if ($request->has('foto_ganti')) {
+            foreach ($request->file('foto_ganti') ?? [] as $id_foto => $file) {
+                if ($file && $file->isValid()) {
+                    $foto = FotoWisata::find($id_foto);
+                    if ($foto) {
+                        if (file_exists(public_path($foto->url_foto))) {
+                            unlink(public_path($foto->url_foto));
+                        }
+                        $filename = time() . '_' . $id_foto . '.' . $file->getClientOriginalExtension();
+                        $file->move(public_path('uploads'), $filename);
+                        $foto->url_foto = 'uploads/' . $filename;
+                        $foto->save();
+                    }
+                }
+            }
+        }
+
+        // 2. Tambah foto baru
+        if ($request->hasFile('foto')) {
+            foreach ($request->file('foto') as $file) {
+                if ($file && $file->isValid()) {
+                    $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->move(public_path('uploads'), $filename);
+                    FotoWisata::create([
+                        'id_wisata' => $id_wisata,
+                        'url_foto' => 'uploads/' . $filename,
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->route('wisata.edit', $id_wisata)->with('success', 'Foto wisata berhasil diperbarui.');
+    }
+
+    public function hapusFoto($id_foto_wisata)
+    {
+        $foto = FotoWisata::findOrFail($id_foto_wisata);
+        $id_wisata = $foto->id_wisata;
+        // Hapus file fisik
+        if (file_exists(public_path($foto->url_foto))) {
+            unlink(public_path($foto->url_foto));
+        }
+        $foto->delete();
+        return redirect()->route('wisata.edit', $id_wisata)->with('success', 'Foto berhasil dihapus.');
     }
 }

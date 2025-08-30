@@ -41,4 +41,8 @@ class Wisata extends Model
         return $query;
     }
 
+    public function fotoWisata()
+    {
+        return $this->hasMany(FotoWisata::class, 'id_wisata');
+    }
 }

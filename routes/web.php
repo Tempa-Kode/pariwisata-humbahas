@@ -28,6 +28,8 @@ Route::prefix('wisata')->middleware(['auth'])->group(function () {
     Route::get('/', [\App\Http\Controllers\Wisata::class, 'index'])->name('wisata.index');
     Route::get('/tambah', [\App\Http\Controllers\Wisata::class, 'formTambah'])->name('wisata.tambah');
     Route::post('/simpan', [\App\Http\Controllers\Wisata::class, 'simpan'])->name('wisata.simpan');
+    Route::post('/tambah-foto', [\App\Http\Controllers\Wisata::class, 'tambahFotoWisata'])->name('wisata.tambah-foto');
+    Route::post('hapus-foto/{id_foto_wisata}', [\App\Http\Controllers\Wisata::class, 'hapusFoto'])->name('wisata.hapus-foto');
     Route::get('/edit/{id}', [\App\Http\Controllers\Wisata::class, 'edit'])->name('wisata.edit');
     Route::put('/update/{id}', [\App\Http\Controllers\Wisata::class, 'update'])->name('wisata.update');
     Route::delete('/hapus/{id}', [\App\Http\Controllers\Wisata::class, 'hapus'])->name('wisata.hapus');
