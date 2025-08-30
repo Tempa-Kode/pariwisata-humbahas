@@ -66,6 +66,34 @@
                                 <div id="map" style="height: 350px"></div>
                             </div>
                         </div>
+                        <div class="col-md-12 mt-3">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Galeri Foto:</label>
+                                <div class="row g-2">
+                                    @foreach($wisata->fotoWisata as $foto)
+                                        <div class="col-6 col-sm-4 col-md-3">
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#modalFotoWisata{{ $foto->id_foto_wisata }}">
+                                                <img src="{{ asset($foto->url_foto) }}" alt="Foto Wisata" class="img-thumbnail" style="height: 100px; object-fit: cover; width: 100%;">
+                                            </a>
+                                        </div>
+                                        <!-- Modal Foto Besar -->
+                                        <div class="modal fade" id="modalFotoWisata{{ $foto->id_foto_wisata }}" tabindex="-1" aria-labelledby="modalLabel{{ $foto->id_foto_wisata }}" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="modalLabel{{ $foto->id_foto_wisata }}">Foto Wisata</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body text-center">
+                                                        <img src="{{ asset($foto->url_foto) }}" alt="Foto Wisata" class="img-fluid rounded">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
