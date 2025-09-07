@@ -38,7 +38,8 @@
                                     <div class="row mb-3">
                                         <div class="col-4"><strong>Jarak</strong></div>
                                         <div class="col-1">:</div>
-                                        <div class="col-7" id="jarakTempuh">{{ number_format($hasilRute["jarak_total"], 2) }} km </div>
+                                        <div class="col-7" id="jarakTempuh">
+                                            {{ number_format($hasilRute["jarak_total"], 2) }} km </div>
                                     </div>
                                     <div class="row mb-3">
                                         <div class="col-4"><strong>Waktu Tempuh</strong></div>
@@ -48,6 +49,231 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Rute Alternatif Section -->
+                        @if (isset($hasilRute["semua_rute_alternatif"]) && count($hasilRute["semua_rute_alternatif"]) > 1)
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-gradient-primary text-white">
+                                            <h5 class="mb-0 d-flex align-items-center text-white">
+                                                <i class="fas fa-route me-2"></i>
+                                                Rute Alternatif Yang Tersedia
+                                                <span
+                                                    class="badge bg-light text-primary ms-2">{{ count($hasilRute["semua_rute_alternatif"]) }}
+                                                    Pilihan</span>
+                                            </h5>
+                                            <small class="text-light">Pilih rute yang sesuai dengan preferensi perjalanan
+                                                Anda</small>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0" id="tabelRuteAlternatif">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th class="text-center" width="5%">#</th>
+                                                            <th width="15%">
+                                                                <i class="fas fa-road text-primary"></i> Jenis Rute
+                                                            </th>
+                                                            <th width="15%">
+                                                                <i class="fas fa-ruler text-success"></i> Jarak
+                                                            </th>
+                                                            <th width="15%">
+                                                                <i class="fas fa-clock text-warning"></i> Waktu
+                                                            </th>
+                                                            <th width="10%">
+                                                                <i class="fas fa-exchange-alt text-info"></i> Transit
+                                                            </th>
+                                                            <th width="25%">
+                                                                <i class="fas fa-route text-secondary"></i> Destinasi yang
+                                                                Dilalui
+                                                            </th>
+                                                            {{-- <th width="10%">
+                                                                <i class="fas fa-star text-warning"></i> Tingkat
+                                                            </th> --}}
+                                                            <th width="10%" class="text-center">Aksi</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach ($hasilRute["semua_rute_alternatif"] as $index => $rute)
+                                                            <tr class="rute-row {{ $index === 0 ? "table-primary" : "" }}"
+                                                                data-rute-index="{{ $index }}"
+                                                                data-rute-color="{{ $rute["warna_rute"] ?? "#007bff" }}">
+                                                                <td class="text-center fw-bold">
+                                                                    <div class="rute-badge"
+                                                                        style="background-color: {{ $rute["warna_rute"] ?? "#007bff" }};">
+                                                                        {{ $rute["nomor_rute"] }}
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    @if ($index === 0)
+                                                                        <span class="badge bg-primary"><i
+                                                                                class="fas fa-crown"></i> Terpendek</span>
+                                                                    @elseif($rute["jumlah_transit"] === 0)
+                                                                        <span class="badge bg-success"><i
+                                                                                class="fas fa-arrow-right"></i>
+                                                                            Langsung</span>
+                                                                    @else
+                                                                        <span class="badge bg-info"><i
+                                                                                class="fas fa-route"></i> Dengan
+                                                                            Transit</span>
+                                                                    @endif
+                                                                </td>
+                                                                <td>
+                                                                    <strong
+                                                                        class="text-success">{{ number_format($rute["jarak_rute"], 1) }}
+                                                                        km</strong>
+                                                                    @if ($index === 0)
+                                                                        <br><small class="text-muted">Terdekat</small>
+                                                                    @else
+                                                                        <br><small class="text-muted">
+                                                                            +{{ number_format($rute["jarak_rute"] - $hasilRute["semua_rute_alternatif"][0]["jarak_rute"], 1) }}
+                                                                            km
+                                                                        </small>
+                                                                    @endif
+                                                                </td>
+                                                                <td>
+                                                                    <strong
+                                                                        class="text-warning">{{ $rute["waktu_rute"] }}</strong>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    @if ($rute["jumlah_transit"] === 0)
+                                                                        <span class="badge bg-light text-dark">
+                                                                            <i class="fas fa-check"></i> Tanpa Transit
+                                                                        </span>
+                                                                    @else
+                                                                        <span class="badge bg-warning text-dark">
+                                                                            {{ $rute["jumlah_transit"] }} Transit
+                                                                        </span>
+                                                                    @endif
+                                                                </td>
+                                                                <td>
+                                                                    @if (!empty($rute["semua_destinasi_dilalui"]))
+                                                                        <div class="destinasi-list">
+                                                                            @foreach ($rute["semua_destinasi_dilalui"] as $destinasi)
+                                                                                @php
+                                                                                    $badgeClass =
+                                                                                        $destinasi["posisi"] === "awal"
+                                                                                            ? "bg-success"
+                                                                                            : ($destinasi["posisi"] ===
+                                                                                            "tujuan"
+                                                                                                ? "bg-danger"
+                                                                                                : "bg-info");
+                                                                                    $icon =
+                                                                                        $destinasi["posisi"] === "awal"
+                                                                                            ? "fa-play"
+                                                                                            : ($destinasi["posisi"] ===
+                                                                                            "tujuan"
+                                                                                                ? "fa-flag-checkered"
+                                                                                                : "fa-map-marker-alt");
+                                                                                    $titleText =
+                                                                                        $destinasi["posisi"] === "awal"
+                                                                                            ? "Titik Awal Perjalanan"
+                                                                                            : ($destinasi["posisi"] ===
+                                                                                            "tujuan"
+                                                                                                ? "Destinasi Tujuan Akhir"
+                                                                                                : "Destinasi Transit/Singgah");
+                                                                                @endphp
+                                                                                <small
+                                                                                    class="badge {{ $badgeClass }} me-1 mb-1"
+                                                                                    title="{{ $titleText }}: {{ $destinasi["nama"] }} (Urutan ke-{{ $destinasi["urutan"] }})"
+                                                                                    data-bs-toggle="tooltip">
+                                                                                    <i class="fas {{ $icon }}"></i>
+                                                                                    {{ $destinasi["urutan"] }}.
+                                                                                    {{ $destinasi["nama"] }}
+                                                                                </small>
+                                                                                @if (!$loop->last && $destinasi["posisi"] !== "tujuan")
+                                                                                    <i class="fas fa-arrow-right text-muted mx-1"
+                                                                                        style="font-size: 10px;"></i>
+                                                                                @endif
+                                                                            @endforeach
+                                                                        </div>
+                                                                    @else
+                                                                        <small class="text-muted">Tidak ada data
+                                                                            rute</small>
+                                                                    @endif
+                                                                </td>
+                                                                {{-- <td>
+                                                                    @php
+                                                                        $tingkat =
+                                                                            $rute["tingkat_kemudahan"] ?? "Sedang";
+                                                                        $badgeClass =
+                                                                            $tingkat === "Mudah"
+                                                                                ? "bg-success"
+                                                                                : ($tingkat === "Sedang"
+                                                                                    ? "bg-warning"
+                                                                                    : "bg-danger");
+                                                                    @endphp
+                                                                    <span class="badge {{ $badgeClass }}">
+                                                                        @if ($tingkat === "Mudah")
+                                                                            <i class="fas fa-smile"></i>
+                                                                        @elseif($tingkat === "Sedang")
+                                                                            <i class="fas fa-meh"></i>
+                                                                        @else
+                                                                            <i class="fas fa-frown"></i>
+                                                                        @endif
+                                                                        {{ $tingkat }}
+                                                                    </span>
+                                                                </td> --}}
+                                                                <td class="text-center">
+                                                                    <button
+                                                                        class="btn btn-outline-primary btn-sm pilih-rute-btn"
+                                                                        data-rute-index="{{ $index }}"
+                                                                        title="Pilih rute ini">
+                                                                        <i class="fas fa-eye"></i>
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <!-- Info Footer -->
+                                            <div class="card-footer bg-light">
+                                                <div class="row text-center">
+                                                    <div class="col-md-2">
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-info-circle"></i>
+                                                            {{ count($hasilRute["semua_rute_alternatif"]) }} rute ditemukan
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <small class="text-success">
+                                                            <i class="fas fa-check-circle"></i>
+                                                            Terdekat:
+                                                            {{ number_format($hasilRute["semua_rute_alternatif"][0]["jarak_rute"], 1) }}
+                                                            km
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <small class="text-warning">
+                                                            <i class="fas fa-clock"></i>
+                                                            Tercepat:
+                                                            {{ $hasilRute["semua_rute_alternatif"][0]["waktu_rute"] }}
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <small class="text-primary">
+                                                            <i class="fas fa-map-marked-alt"></i>
+                                                            Total
+                                                            {{ array_sum(array_column($hasilRute["semua_rute_alternatif"], "jumlah_transit")) + count($hasilRute["semua_rute_alternatif"]) * 2 }}
+                                                            destinasi tersedia
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <small class="text-info" id="ruteAktifInfo">
+                                                            <i class="fas fa-route"></i>
+                                                            Rute 1 sedang aktif
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
 
                         <!-- Peta -->
                         <div class="row mb-4">
@@ -86,14 +312,15 @@
                                             </button>
                                             <button class="btn btn-rute-alternatif btn-outline-success btn-sm"
                                                 id="btnRute2" data-rute="2">
-                                                <i class="fas fa-route"></i> Rute 2 (Langsung)
+                                                <i class="fas fa-route"></i> Rute API MAPS (Langsung)
                                             </button>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="peta-container">
-                                    <div id="peta" style="height: 500px; border: 2px solid #ddd; border-radius: 8px;">
+                                    <div id="peta"
+                                        style="height: 500px; border: 2px solid #ddd; border-radius: 8px;">
                                     </div>
                                 </div>
                             </div>
@@ -138,6 +365,22 @@
                                                     style="background-color: #28a745; height: 3px; width: 20px;"></div>
                                                 <small>Jalur Rute 2 (Langsung)</small>
                                             </div>
+                                            @if (isset($hasilRute["semua_rute_alternatif"]) && count($hasilRute["semua_rute_alternatif"]) > 2)
+                                                @foreach (array_slice($hasilRute["semua_rute_alternatif"], 2, 3) as $index => $rute)
+                                                    <div class="legend-item mb-2">
+                                                        <div class="legend-line me-2"
+                                                            style="background-color: {{ $rute["warna_rute"] ?? "#6c757d" }}; height: 3px; width: 20px;">
+                                                        </div>
+                                                        <small>Jalur Rute {{ $index + 3 }}
+                                                            @if ($rute["jumlah_transit"] === 0)
+                                                                (Langsung)
+                                                            @else
+                                                                ({{ $rute["jumlah_transit"] }} Transit)
+                                                            @endif
+                                                        </small>
+                                                    </div>
+                                                @endforeach
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="mt-2">
@@ -189,6 +432,11 @@
         let infoRute1 = null; // Info jarak dan waktu untuk rute 1
         let infoRute2 = null; // Info jarak dan waktu untuk rute 2
 
+        // Data rute alternatif
+        let semuaRuteAlternatif = @json($hasilRute["semua_rute_alternatif"] ?? []);
+        let garisSemuaRute = {}; // Menyimpan semua garis rute
+        let ruteAlternatifAktif = 0; // Index rute alternatif yang sedang aktif
+
         // ==========================================
         // INISIALISASI DOCUMENT READY
         // ==========================================
@@ -215,6 +463,31 @@
 
             $('#btnRute2').click(function() {
                 pilihRuteAlternatif(2);
+            });
+
+            // Event handler untuk tabel rute alternatif
+            $('.pilih-rute-btn').click(function() {
+                const ruteIndex = $(this).data('rute-index');
+                pilihRuteAlternatifDariTabel(ruteIndex);
+            });
+
+            // Event handler untuk hover row tabel
+            $('.rute-row').hover(
+                function() {
+                    const ruteIndex = $(this).data('rute-index');
+                    highlightRuteDiPeta(ruteIndex, true);
+                },
+                function() {
+                    const ruteIndex = $(this).data('rute-index');
+                    highlightRuteDiPeta(ruteIndex, false);
+                }
+            );
+
+            // Inisialisasi Bootstrap tooltips untuk destinasi badges
+            $('[data-bs-toggle="tooltip"]').tooltip({
+                container: 'body',
+                placement: 'top',
+                trigger: 'hover'
             });
         });
 
@@ -478,6 +751,372 @@
         }
 
         // ==========================================
+        // FUNGSI RUTE ALTERNATIF
+        // ==========================================
+
+        // Fungsi untuk memilih rute alternatif dari tabel
+        function pilihRuteAlternatifDariTabel(ruteIndex) {
+            console.log('Memilih rute alternatif index:', ruteIndex);
+
+            // Update rute aktif
+            ruteAlternatifAktif = ruteIndex;
+
+            // Update tampilan tabel
+            updateTampilanTabelRute(ruteIndex);
+
+            // Update info panel dengan data rute yang dipilih
+            updateInfoRuteAlternatif(ruteIndex);
+
+            // Tampilkan rute di peta
+            tampilkanRuteAlternatifDiPeta(ruteIndex);
+
+            // Update info footer
+            updateInfoRuteAktif(ruteIndex);
+        }
+
+        // Fungsi untuk update tampilan tabel rute
+        function updateTampilanTabelRute(ruteIndex) {
+            // Hapus highlight dari semua row
+            $('.rute-row').removeClass('table-primary table-success table-warning');
+
+            // Highlight row yang dipilih
+            $(`.rute-row[data-rute-index="${ruteIndex}"]`).addClass('table-primary');
+
+            // Update button state
+            $('.pilih-rute-btn').removeClass('btn-primary').addClass('btn-outline-primary');
+            $(`.pilih-rute-btn[data-rute-index="${ruteIndex}"]`).removeClass('btn-outline-primary').addClass('btn-primary');
+        }
+
+        // Fungsi untuk update info panel dengan data rute alternatif
+        function updateInfoRuteAlternatif(ruteIndex) {
+            if (!semuaRuteAlternatif[ruteIndex]) return;
+
+            const rute = semuaRuteAlternatif[ruteIndex];
+            const jarakElement = $('#jarakTempuh');
+            const waktuElement = $('#waktuTempuh');
+
+            // Update dengan data rute yang dipilih
+            jarakElement.text(`${number_format(rute.jarak_rute, 2)} km`);
+            waktuElement.text(rute.waktu_rute);
+
+            console.log(`Info panel diupdate dengan rute ${ruteIndex + 1}:`, {
+                jarak: rute.jarak_rute,
+                waktu: rute.waktu_rute
+            });
+        }
+
+        // Fungsi untuk menampilkan rute alternatif di peta
+        function tampilkanRuteAlternatifDiPeta(ruteIndex) {
+            const peta = window.petaGlobal;
+            if (!peta || !semuaRuteAlternatif[ruteIndex]) return;
+
+            // Sembunyikan semua rute
+            sembunyikanSemuaRuteDiPeta();
+
+            // Tampilkan rute yang dipilih jika sudah digambar
+            if (garisSemuaRute[ruteIndex]) {
+                const garisRute = garisSemuaRute[ruteIndex];
+
+                if (Array.isArray(garisRute)) {
+                    // Jika array of layers
+                    garisRute.forEach(garis => {
+                        if (garis && !peta.hasLayer(garis)) {
+                            garis.addTo(peta);
+                        }
+                    });
+                } else if (garisRute instanceof L.LayerGroup) {
+                    // Jika layer group
+                    garisRute.addTo(peta);
+                } else {
+                    // Jika single layer
+                    garisRute.addTo(peta);
+                }
+
+                console.log(`Rute ${ruteIndex + 1} ditampilkan di peta`);
+            } else {
+                console.log(`Rute ${ruteIndex + 1} belum digambar, akan dibuat...`);
+                // Gambar rute jika belum ada
+                gambarRuteAlternatifBaru(ruteIndex);
+            }
+        }
+
+        // Fungsi untuk menyembunyikan semua rute di peta
+        function sembunyikanSemuaRuteDiPeta() {
+            const peta = window.petaGlobal;
+            if (!peta) return;
+
+            // Sembunyikan rute lama
+            if (garisRute1 && peta.hasLayer(garisRute1)) {
+                peta.removeLayer(garisRute1);
+            }
+            if (garisRute2 && peta.hasLayer(garisRute2)) {
+                peta.removeLayer(garisRute2);
+            }
+
+            // Sembunyikan semua rute alternatif
+            Object.values(garisSemuaRute).forEach(garisRute => {
+                if (Array.isArray(garisRute)) {
+                    garisRute.forEach(garis => {
+                        if (garis && peta.hasLayer(garis)) {
+                            peta.removeLayer(garis);
+                        }
+                    });
+                } else if (garisRute instanceof L.LayerGroup) {
+                    if (peta.hasLayer(garisRute)) {
+                        peta.removeLayer(garisRute);
+                    }
+                } else if (garisRute && peta.hasLayer(garisRute)) {
+                    peta.removeLayer(garisRute);
+                }
+            });
+        }
+
+        // Fungsi untuk highlight rute saat hover
+        function highlightRuteDiPeta(ruteIndex, highlight) {
+            const peta = window.petaGlobal;
+            if (!peta || !garisSemuaRute[ruteIndex]) return;
+
+            const garisRute = garisSemuaRute[ruteIndex];
+            const opacity = highlight ? 1.0 : 0.8;
+            const weight = highlight ? 6 : 4;
+
+            if (Array.isArray(garisRute)) {
+                garisRute.forEach(garis => {
+                    if (garis && garis.setStyle) {
+                        garis.setStyle({
+                            opacity: opacity,
+                            weight: weight
+                        });
+                    }
+                });
+            } else if (garisRute && garisRute.setStyle) {
+                garisRute.setStyle({
+                    opacity: opacity,
+                    weight: weight
+                });
+            }
+        }
+
+        // Fungsi untuk update info rute aktif
+        function updateInfoRuteAktif(ruteIndex) {
+            const rute = semuaRuteAlternatif[ruteIndex];
+            if (!rute) return;
+
+            const jenisRute = rute.jumlah_transit === 0 ? 'Langsung' : `Dengan ${rute.jumlah_transit} Transit`;
+            $('#ruteAktifInfo').html(`
+                <i class="fas fa-route" style="color: ${rute.warna_rute};"></i>
+                Rute ${rute.nomor_rute} (${jenisRute}) sedang aktif
+            `);
+
+            // Update info di legend juga
+            $('#infoRuteAktif').html(`
+                <i class="fas fa-route" style="color: ${rute.warna_rute};"></i>
+                Rute ${rute.nomor_rute} (${jenisRute}) sedang aktif
+            `);
+        }
+
+        // Fungsi untuk gambar rute alternatif baru
+        function gambarRuteAlternatifBaru(ruteIndex) {
+            const rute = semuaRuteAlternatif[ruteIndex];
+            if (!rute || !rute.jalur) return;
+
+            console.log(`Menggambar rute alternatif ${ruteIndex + 1}:`, rute);
+
+            // Request data koordinat untuk rute alternatif
+            $.ajax({
+                url: '{{ route("api.rute-alternatif") }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    rute_index: ruteIndex,
+                    jalur: rute.jalur
+                },
+                success: function(response) {
+                    if (response.success && response.koordinat_rute) {
+                        gambarRuteAlternatifDiPeta(ruteIndex, response.koordinat_rute, rute.warna_rute);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error(`Gagal memuat data rute ${ruteIndex + 1}:`, error);
+                    // Fallback: buat garis lurus
+                    buatGarisLurusFallback(ruteIndex, rute);
+                }
+            });
+        }
+
+        // Fungsi untuk gambar rute alternatif di peta dengan data koordinat
+        function gambarRuteAlternatifDiPeta(ruteIndex, koordinatRute, warnaRute) {
+            const peta = window.petaGlobal;
+            if (!peta || !koordinatRute || koordinatRute.length < 2) return;
+
+            console.log(
+                `Menggambar rute alternatif ${ruteIndex + 1} di peta dengan ${koordinatRute.length} titik mengikuti jalan`
+                );
+
+            const garisRute = [];
+            let segmenSelesai = 0;
+            const totalSegmen = koordinatRute.length - 1;
+
+            // Gambar rute antar titik secara berurutan menggunakan routing API
+            for (let i = 0; i < koordinatRute.length - 1; i++) {
+                const asal = koordinatRute[i];
+                const tujuan = koordinatRute[i + 1];
+
+                // Gunakan API routing untuk mendapatkan rute mengikuti jalan
+                $.ajax({
+                    url: '{{ route("api.rute-jalan") }}',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        koordinat_awal: asal,
+                        koordinat_tujuan: tujuan
+                    },
+                    success: function(response) {
+                        segmenSelesai++;
+
+                        if (response.success && response.koordinat_rute) {
+                            // Gambar garis mengikuti jalan sebenarnya
+                            const garis = L.polyline(response.koordinat_rute, {
+                                color: warnaRute || '#007bff',
+                                weight: 4,
+                                opacity: 0.8,
+                                smoothFactor: 1
+                            });
+
+                            // Tambahkan tooltip dengan informasi detail
+                            let tooltipText = `Rute ${ruteIndex + 1}: ${asal.nama} → ${tujuan.nama}`;
+                            if (response.jarak) {
+                                tooltipText += `<br>Jarak: ${response.jarak} km`;
+                            }
+                            if (response.durasi) {
+                                tooltipText += `<br>Waktu: ${response.durasi} menit`;
+                            }
+                            if (response.fallback) {
+                                tooltipText += '<br><small>(Rute perkiraan)</small>';
+                            }
+
+                            garis.bindTooltip(tooltipText, {
+                                permanent: false,
+                                sticky: true
+                            });
+
+                            garisRute.push(garis);
+                        } else {
+                            // Fallback: gunakan garis lurus jika API gagal
+                            console.warn(
+                                `Gagal mendapatkan rute jalan untuk segmen ${i + 1}, menggunakan garis lurus`
+                                );
+                            const koordinatGaris = [
+                                [asal.lat, asal.lng],
+                                [tujuan.lat, tujuan.lng]
+                            ];
+
+                            const garis = L.polyline(koordinatGaris, {
+                                color: warnaRute || '#007bff',
+                                weight: 4,
+                                opacity: 0.8,
+                                smoothFactor: 1,
+                                dashArray: '5, 10' // Garis putus-putus untuk menandakan fallback
+                            });
+
+                            garis.bindTooltip(
+                                `Rute ${ruteIndex + 1}: ${asal.nama} → ${tujuan.nama} (garis lurus)`, {
+                                    permanent: false,
+                                    sticky: true
+                                });
+
+                            garisRute.push(garis);
+                        }
+
+                        // Tambahkan marker transit jika ada (hanya sekali per titik)
+                        if (i > 0 && i < koordinatRute.length - 1 && segmenSelesai === i + 1) {
+                            const markerTransit = L.marker([asal.lat, asal.lng], {
+                                icon: L.divIcon({
+                                    className: 'marker-transit-alternatif',
+                                    html: `<div style="background-color: ${warnaRute || '#ffc107'}; color: white; border-radius: 50%; width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; font-size: 10px; border: 2px solid white; box-shadow: 0 1px 2px rgba(0,0,0,0.3);"><i class="bi bi-circle-fill"></i></div>`,
+                                    iconSize: [15, 15],
+                                    iconAnchor: [7, 7]
+                                })
+                            });
+
+                            markerTransit.bindPopup(
+                                `<b>Transit: ${asal.nama}</b><br><small>Rute Alternatif ${ruteIndex + 1}</small>`
+                                );
+                            garisRute.push(markerTransit);
+                        }
+
+                        // Jika semua segmen selesai, simpan garis rute
+                        if (segmenSelesai === totalSegmen) {
+                            garisSemuaRute[ruteIndex] = garisRute;
+                            console.log(
+                                `Rute alternatif ${ruteIndex + 1} berhasil digambar di peta dengan routing`);
+                        }
+                    },
+                    error: function() {
+                        segmenSelesai++;
+                        console.warn(
+                            `Error mendapatkan rute jalan untuk segmen ${i + 1}, menggunakan garis lurus`);
+
+                        // Fallback: gunakan garis lurus
+                        const koordinatGaris = [
+                            [asal.lat, asal.lng],
+                            [tujuan.lat, tujuan.lng]
+                        ];
+
+                        const garis = L.polyline(koordinatGaris, {
+                            color: warnaRute || '#007bff',
+                            weight: 4,
+                            opacity: 0.8,
+                            smoothFactor: 1,
+                            dashArray: '5, 10' // Garis putus-putus untuk menandakan fallback
+                        });
+
+                        garis.bindTooltip(
+                        `Rute ${ruteIndex + 1}: ${asal.nama} → ${tujuan.nama} (garis lurus)`, {
+                            permanent: false,
+                            sticky: true
+                        });
+
+                        garisRute.push(garis);
+
+                        // Tambahkan marker transit jika ada (hanya sekali per titik)
+                        if (i > 0 && i < koordinatRute.length - 1 && segmenSelesai === i + 1) {
+                            const markerTransit = L.marker([asal.lat, asal.lng], {
+                                icon: L.divIcon({
+                                    className: 'marker-transit-alternatif',
+                                    html: `<div style="background-color: ${warnaRute || '#ffc107'}; color: white; border-radius: 50%; width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; font-size: 10px; border: 2px solid white; box-shadow: 0 1px 2px rgba(0,0,0,0.3);"><i class="bi bi-circle-fill"></i></div>`,
+                                    iconSize: [15, 15],
+                                    iconAnchor: [7, 7]
+                                })
+                            });
+
+                            markerTransit.bindPopup(
+                                `<b>Transit: ${asal.nama}</b><br><small>Rute Alternatif ${ruteIndex + 1}</small>`
+                                );
+                            garisRute.push(markerTransit);
+                        }
+
+                        // Jika semua segmen selesai, simpan garis rute
+                        if (segmenSelesai === totalSegmen) {
+                            garisSemuaRute[ruteIndex] = garisRute;
+                            console.log(
+                                `Rute alternatif ${ruteIndex + 1} berhasil digambar di peta (dengan fallback)`
+                                );
+                        }
+                    }
+                });
+            }
+        }
+
+        // Fungsi fallback untuk membuat garis lurus
+        function buatGarisLurusFallback(ruteIndex, rute) {
+            console.log(`Membuat garis lurus fallback untuk rute ${ruteIndex + 1}`);
+
+            // Implementasi fallback sederhana
+            // Akan diimplementasi jika diperlukan
+        }
+
+        // ==========================================
         // FUNGSI INISIALISASI PETA
         // ==========================================
         function inisialisasiPeta() {
@@ -565,7 +1204,22 @@
 
                 // Inisialisasi default rute aktif setelah semua data dimuat
                 setTimeout(() => {
-                    pilihRuteAlternatif(1); // Default ke rute 1 (transit)
+                    // Inisialisasi semua rute alternatif jika ada
+                    if (semuaRuteAlternatif && semuaRuteAlternatif.length > 0) {
+                        console.log('Memulai inisialisasi rute alternatif:', semuaRuteAlternatif.length,
+                            'rute');
+                        pilihRuteAlternatifDariTabel(0); // Aktifkan rute pertama
+
+                        // Pre-load rute alternatif lainnya secara background
+                        for (let i = 1; i < Math.min(semuaRuteAlternatif.length, 5); i++) {
+                            setTimeout(() => {
+                                gambarRuteAlternatifBaru(i);
+                            }, i * 500); // Load bertahap untuk mengurangi beban
+                        }
+                    } else {
+                        // Fallback ke sistem lama jika tidak ada rute alternatif
+                        pilihRuteAlternatif(1); // Default ke rute 1 (transit)
+                    }
                 }, 1500);
             }, 500);
         }
@@ -1220,6 +1874,170 @@
             .btn-rute-alternatif {
                 font-size: 12px;
                 padding: 6px 12px;
+            }
+        }
+
+        /* ==========================================
+                   RUTE ALTERNATIF TABLE STYLING
+                   ========================================== */
+        /* Gradient Header untuk Card Rute Alternatif */
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+        }
+
+        /* Tabel Rute Alternatif */
+        #tabelRuteAlternatif {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        #tabelRuteAlternatif thead th {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 8px;
+            vertical-align: middle;
+        }
+
+        #tabelRuteAlternatif tbody tr {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        #tabelRuteAlternatif tbody tr:hover {
+            background-color: #f8f9fa !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #tabelRuteAlternatif tbody tr.table-primary {
+            background-color: rgba(0, 123, 255, 0.1) !important;
+            border-left: 4px solid #007bff;
+        }
+
+        #tabelRuteAlternatif tbody td {
+            padding: 12px 8px;
+            vertical-align: middle;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 13px;
+        }
+
+        /* Badge Nomor Rute */
+        .rute-badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            margin: 0 auto;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Transit List Styling */
+        .transit-list {
+            max-height: 60px;
+            overflow-y: auto;
+        }
+
+        /* Destinasi List Styling */
+        .destinasi-list {
+            max-height: 80px;
+            overflow-y: auto;
+            line-height: 1.4;
+        }
+
+        .destinasi-list .badge {
+            font-size: 10px;
+            padding: 4px 6px;
+            margin: 1px;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .destinasi-list .badge i {
+            font-size: 8px;
+        }
+
+        .destinasi-list .fa-arrow-right {
+            opacity: 0.6;
+            margin: 0 2px;
+        }
+
+        /* Responsif untuk destinasi list */
+        @media (max-width: 768px) {
+            .destinasi-list {
+                max-height: 100px;
+            }
+
+            .destinasi-list .badge {
+                font-size: 9px;
+                padding: 3px 5px;
+                margin-bottom: 2px;
+                display: block;
+                width: 100%;
+                text-align: left;
+            }
+
+            .destinasi-list .fa-arrow-right {
+                display: none;
+            }
+        }
+
+        /* Button Pilih Rute */
+        .pilih-rute-btn {
+            transition: all 0.3s ease;
+            border-radius: 20px;
+            padding: 5px 12px;
+        }
+
+        .pilih-rute-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .pilih-rute-btn.btn-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            border: none;
+        }
+
+        /* Animation untuk Row Selection */
+        @keyframes selectedRowPulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .rute-row.table-primary {
+            animation: selectedRowPulse 0.5s ease-in-out;
+        }
+
+        /* Responsif untuk Tabel Rute Alternatif */
+        @media (max-width: 992px) {
+            #tabelRuteAlternatif {
+                font-size: 12px;
+            }
+
+            .rute-badge {
+                width: 25px;
+                height: 25px;
+                font-size: 12px;
             }
         }
     </style>

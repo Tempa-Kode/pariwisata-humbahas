@@ -8,6 +8,7 @@ Route::get('/destinasi-wisata/{id}', [App\Http\Controllers\PengunjungController:
 Route::get('/cari-rute', [App\Http\Controllers\Dijkstra::class, 'halamanCariRute'])->name('pengunjung.cari-rute');
 Route::post('/cari-rute', [App\Http\Controllers\Dijkstra::class, 'cariRuteTerpendek'])->name('pengunjung.proses-rute');
 Route::post('/api/rute-data', [App\Http\Controllers\Dijkstra::class, 'dapatkanDataRute'])->name('api.rute-data');
+Route::post('/api/rute-alternatif', [App\Http\Controllers\Dijkstra::class, 'dapatkanDataRuteAlternatif'])->name('api.rute-alternatif');
 Route::post('/api/rute-jalan', [App\Http\Controllers\Dijkstra::class, 'dapatkanRuteJalanSebenarnya'])->name('api.rute-jalan');
 
 Route::get('/login', [App\Http\Controllers\Login::class, 'halamanLogin'])->name('login');
