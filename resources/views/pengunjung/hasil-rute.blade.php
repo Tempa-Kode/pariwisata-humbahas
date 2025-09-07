@@ -38,12 +38,12 @@
                                     <div class="row mb-3">
                                         <div class="col-4"><strong>Jarak</strong></div>
                                         <div class="col-1">:</div>
-                                        <div class="col-7">{{ number_format($hasilRute["jarak_total"], 2) }} km </div>
+                                        <div class="col-7" id="jarakTempuh">{{ number_format($hasilRute["jarak_total"], 2) }} km </div>
                                     </div>
                                     <div class="row mb-3">
                                         <div class="col-4"><strong>Waktu Tempuh</strong></div>
                                         <div class="col-1">:</div>
-                                        <div class="col-7">{{ $hasilRute["waktu_tempuh"] }}</div>
+                                        <div class="col-7" id="waktuTempuh">{{ $hasilRute["waktu_tempuh"] }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -193,6 +193,9 @@
         // INISIALISASI DOCUMENT READY
         // ==========================================
         $(document).ready(function() {
+            // Inisialisasi awal: Tampilkan data database di info rute
+            inisialisasiInfoRuteAwal();
+
             inisialisasiPeta();
 
             // Event handler untuk toggle destinasi
@@ -218,6 +221,36 @@
         // ==========================================
         // FUNGSI UTILITY
         // ==========================================
+
+        // Fungsi untuk inisialisasi info rute saat halaman loading
+        function inisialisasiInfoRuteAwal() {
+            // Pastikan data awal dari database ditampilkan
+            const dataAsliJarak = "{{ number_format($hasilRute["jarak_total"], 2) }} km";
+            const dataAsliWaktu = "{{ $hasilRute["waktu_tempuh"] }}";
+
+            // Update jarak dan waktu di info panel dengan data database menggunakan ID spesifik
+            const jarakElement = $('#jarakTempuh');
+            const waktuElement = $('#waktuTempuh');
+
+            // Validasi elemen ditemukan
+            if (jarakElement.length === 0) {
+                console.error('Element #jarakTempuh tidak ditemukan!');
+                return;
+            }
+            if (waktuElement.length === 0) {
+                console.error('Element #waktuTempuh tidak ditemukan!');
+                return;
+            }
+
+            jarakElement.text(dataAsliJarak);
+            waktuElement.text(dataAsliWaktu);
+
+            console.log('Inisialisasi awal: Data dari database ditampilkan');
+            console.log('Jarak awal:', dataAsliJarak);
+            console.log('Waktu awal:', dataAsliWaktu);
+            console.log('Element #jarakTempuh:', jarakElement.text());
+            console.log('Element #waktuTempuh:', waktuElement.text());
+        }
 
         // Fungsi untuk update counter destinasi
         function updateCounterDestinasi() {
@@ -271,7 +304,7 @@
 
         // Fungsi untuk memilih rute alternatif
         function pilihRuteAlternatif(nomorRute) {
-            // Cek apakah data rute sudah tersedia
+            // Cek apakah data rute sudah tersedia (hanya untuk garis peta)
             if (nomorRute === 1 && !garisRute1) {
                 console.log('Data rute 1 belum tersedia, menunggu...');
                 $('#infoRuteAktif').html('<i class="fas fa-spinner fa-spin text-primary"></i> Memuat rute 1...');
@@ -303,7 +336,7 @@
             // Tampilkan/sembunyikan garis rute
             tampilkanRuteAktif();
 
-            // Update info rute di UI
+            // Update info rute di UI - SELALU dipanggil untuk update tampilan
             updateInfoRute();
         }
 
@@ -341,23 +374,102 @@
 
         // Fungsi untuk update info rute di UI
         function updateInfoRute() {
-            const infoRute = ruteAktif === 1 ? infoRute1 : infoRute2;
+            // Data asli dari database untuk rute 1 (transit)
+            const dataAsliJarak = "{{ number_format($hasilRute["jarak_total"], 2) }} km";
+            const dataAsliWaktu = "{{ $hasilRute["waktu_tempuh"] }}";
 
-            if (infoRute) {
-                // Update jarak dan waktu di info panel
-                const jarakElement = $('.info-rute .row').eq(3).find('.col-7');
-                const waktuElement = $('.info-rute .row').eq(4).find('.col-7');
+            // Update jarak dan waktu di info panel menggunakan ID yang spesifik
+            const jarakElement = $('#jarakTempuh');
+            const waktuElement = $('#waktuTempuh');
 
-                if (infoRute.jarak && infoRute.jarak !== 0) {
-                    jarakElement.text(`${number_format(infoRute.jarak, 2)} km`);
-                }
-
-                if (infoRute.waktu && infoRute.waktu !== 'Menghitung...') {
-                    waktuElement.text(infoRute.waktu);
-                }
-
-                console.log(`Info rute ${ruteAktif} diupdate:`, infoRute);
+            // Validasi elemen ditemukan
+            if (jarakElement.length === 0) {
+                console.error('Element #jarakTempuh tidak ditemukan dalam updateInfoRute!');
+                return;
             }
+            if (waktuElement.length === 0) {
+                console.error('Element #waktuTempuh tidak ditemukan dalam updateInfoRute!');
+                return;
+            }
+
+            console.log(`=== UPDATE INFO RUTE ${ruteAktif} ===`);
+            console.log('Data database - Jarak:', dataAsliJarak);
+            console.log('Data database - Waktu:', dataAsliWaktu);
+
+            if (ruteAktif === 1) {
+                // Rute 1 (Transit) - SELALU gunakan data asli dari database
+                jarakElement.text(dataAsliJarak);
+                waktuElement.text(dataAsliWaktu);
+                console.log('Menampilkan data rute 1 (transit) dari database');
+
+            } else if (ruteAktif === 2) {
+                // Rute 2 (Langsung) - gunakan data dari API jika tersedia, fallback ke database
+                console.log('Mencoba menampilkan data rute 2 dari API...');
+                console.log('infoRute2 data:', infoRute2);
+
+                let jarakUpdated = false;
+                let waktuUpdated = false;
+
+                // Update JARAK untuk rute 2
+                if (infoRute2 && infoRute2.jarak && infoRute2.jarak !== 0) {
+                    let jarakFormatted;
+                    if (typeof infoRute2.jarak === 'number') {
+                        jarakFormatted = `${number_format(infoRute2.jarak, 2)} km`;
+                    } else if (typeof infoRute2.jarak === 'string') {
+                        jarakFormatted = infoRute2.jarak;
+                    }
+
+                    if (jarakFormatted) {
+                        jarakElement.text(jarakFormatted);
+                        jarakUpdated = true;
+                        console.log('Jarak rute 2 diupdate dari API:', jarakFormatted);
+                    }
+                }
+
+                // Update WAKTU untuk rute 2
+                if (infoRute2 && infoRute2.waktu && infoRute2.waktu !== 'Menghitung...' && infoRute2.waktu !== 0) {
+                    let waktuFormatted;
+
+                    if (typeof infoRute2.waktu === 'string') {
+                        // Format string asli dari API
+                        waktuFormatted = infoRute2.waktu;
+                    } else if (typeof infoRute2.waktu === 'number') {
+                        // Konversi dari menit ke format readable
+                        if (infoRute2.waktu >= 60) {
+                            const jam = Math.floor(infoRute2.waktu / 60);
+                            const sisaMenit = Math.round(infoRute2.waktu % 60);
+                            waktuFormatted = sisaMenit > 0 ? `${jam} jam ${sisaMenit} menit` : `${jam} jam`;
+                        } else {
+                            waktuFormatted = `${Math.round(infoRute2.waktu)} menit`;
+                        }
+                    }
+
+                    if (waktuFormatted) {
+                        waktuElement.text(waktuFormatted);
+                        waktuUpdated = true;
+                        console.log('Waktu rute 2 diupdate dari API:', waktuFormatted);
+                    }
+                }
+
+                // Fallback ke data database jika API tidak memberikan data
+                if (!jarakUpdated) {
+                    jarakElement.text(dataAsliJarak);
+                    console.log('Jarak rute 2 fallback ke database:', dataAsliJarak);
+                }
+
+                if (!waktuUpdated) {
+                    waktuElement.text(dataAsliWaktu);
+                    console.log('Waktu rute 2 fallback ke database:', dataAsliWaktu);
+                }
+
+                console.log('Data rute 2 selesai diproses');
+            }
+
+            // Log hasil akhir yang ditampilkan
+            console.log('=== HASIL AKHIR TAMPILAN ===');
+            console.log('Jarak yang ditampilkan:', jarakElement.text());
+            console.log('Waktu yang ditampilkan:', waktuElement.text());
+            console.log(`Info rute ${ruteAktif} update selesai`);
         }
 
         // Fungsi helper untuk format number
@@ -643,13 +755,9 @@
 
             // Garis dari lokasi awal ke wisata terdekat
             dapatkanDanGambarRuteJalan(peta, lokasiAwal, wisataAwal, '#28a745', 'Jalur ke titik awal', function(garis,
-            info) {
-                // Callback untuk menyimpan info rute 1
-                if (!infoRute1) infoRute1 = {};
-                if (info) {
-                    infoRute1.jarak_awal = info.jarak || 0;
-                    infoRute1.waktu_awal = info.durasi || 0;
-                }
+                info) {
+                // Callback untuk rute 1 - hanya untuk keperluan peta
+                console.log('Garis dari lokasi awal ke wisata terdekat sudah dibuat (untuk peta saja)');
             });
 
             // Garis rute utama antar wisata untuk rute 1
@@ -660,10 +768,11 @@
                     info) {
                     garisRute1 = garis;
                     if (info) {
-                        infoRute1 = {
-                            jarak: info.jarak || 0,
-                            waktu: info.durasi || 'Menghitung...'
-                        };
+                        console.log('Raw data dari API untuk Rute 1 (hanya untuk peta):', info);
+
+                        // Untuk rute 1, kita tetap gunakan data dari database
+                        // Data API hanya untuk keperluan gambar peta
+                        console.log('Rute 1 menggunakan data dari database, bukan dari API routing');
                     }
                     // Sembunyikan rute 1 jika bukan rute aktif
                     if (ruteAktif !== 1) {
@@ -682,27 +791,59 @@
                 info) {
                 garisRute2 = garis;
                 if (info) {
+                    console.log('Raw data dari API untuk Rute 2:', info);
+
+                    // Simpan data rute 2 untuk tampilan alternatif (opsional)
+                    // Hanya untuk keperluan peta, bukan untuk mengganti data asli
+                    let jarakLangsung = 0;
+                    let waktuLangsung = 0;
+
+                    if (info.jarak) {
+                        if (typeof info.jarak === 'string' && info.jarak.includes('km')) {
+                            jarakLangsung = parseFloat(info.jarak.replace(' km', '').replace(',', '.')) || 0;
+                        } else if (typeof info.jarak === 'number') {
+                            jarakLangsung = info.jarak;
+                        }
+                    }
+
+                    if (info.durasi) {
+                        // Simpan format asli dari API, jangan konversi ke menit
+                        if (typeof info.durasi === 'string') {
+                            // Gunakan format asli dari API
+                            waktuLangsung = info.durasi;
+                        } else if (typeof info.durasi === 'number') {
+                            // Jika API memberikan angka (dalam menit), konversi ke format string
+                            if (info.durasi >= 60) {
+                                const jam = Math.floor(info.durasi / 60);
+                                const sisaMenit = Math.round(info.durasi % 60);
+                                waktuLangsung = sisaMenit > 0 ? `${jam} jam ${sisaMenit} menit` : `${jam} jam`;
+                            } else {
+                                waktuLangsung = `${Math.round(info.durasi)} menit`;
+                            }
+                        }
+                    }
+
+
+                    // Simpan untuk keperluan display rute langsung
                     infoRute2 = {
-                        jarak: info.jarak || 0,
-                        waktu: info.durasi || 'Menghitung...'
+                        jarak: jarakLangsung,
+                        waktu: waktuLangsung
                     };
+
+                    console.log('infoRute2 final (hanya untuk rute langsung):', infoRute2);
                 }
                 // Sembunyikan rute 2 secara default, tampilkan hanya jika aktif
                 if (ruteAktif !== 2) {
                     peta.removeLayer(garis);
                 }
-                console.log('Rute 2 (Langsung) selesai dibuat:', infoRute2);
-            });
-
-            // Sesuaikan viewport untuk menampilkan seluruh rute
+                console.log('Rute 2 (Langsung) selesai dibuat');
+            }); // Sesuaikan viewport untuk menampilkan seluruh rute
             sesuaikanViewportPeta(peta, lokasiAwal, wisataAwal, wisataTujuan, koordinatRute);
         }
 
         function gambarRuteAntarWisata(peta, koordinatRute, nomorRute = 1) {
             console.log(`Membuat rute antar wisata untuk Rute ${nomorRute}...`);
 
-            let totalJarak = 0;
-            let totalWaktu = 0;
             let garisRute = [];
 
             // Gambar rute antar titik wisata secara berurutan
@@ -714,21 +855,12 @@
                     garis, info) {
                     garisRute.push(garis);
 
-                    if (info) {
-                        totalJarak += parseFloat(info.jarak) || 0;
-                        totalWaktu += parseFloat(info.durasi) || 0;
-                    }
-
-                    // Jika ini adalah garis terakhir, simpan info rute
+                    // Jika ini adalah garis terakhir, buat layer group
                     if (i === koordinatRute.length - 2) {
                         if (nomorRute === 1) {
                             // Buat layer group untuk rute 1
                             garisRute1 = L.layerGroup(garisRute);
-                            infoRute1 = {
-                                jarak: totalJarak,
-                                waktu: `${Math.round(totalWaktu)} menit`
-                            };
-                            console.log('Rute 1 (Transit) selesai dibuat:', infoRute1);
+                            console.log('Rute 1 (Transit) layer group selesai dibuat');
                         }
                     }
                 });
