@@ -21,6 +21,7 @@ class Wisata extends Model
         'biaya_parkir',
         'fasilitas',
         'peraturan',
+        'transportasi',
         'longitude',
         'latitude'
     ];

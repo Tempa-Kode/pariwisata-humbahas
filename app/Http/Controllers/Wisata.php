@@ -31,6 +31,7 @@ class Wisata extends Controller
             'biaya_parkir' => 'nullable|string',
             'fasilitas' => 'nullable|string',
             'peraturan' => 'nullable|string',
+            'transportasi' => 'nullable|string|max:255',
             'longitude' => 'required|numeric',
             'latitude' => 'required|numeric',
         ], [
@@ -83,6 +84,7 @@ class Wisata extends Controller
             'harga_tiket' => 'nullable|string',
             'biaya_parkir' => 'nullable|string',
             'fasilitas' => 'nullable|string',
+            'transportasi' => 'nullable|string|max:255',
             'peraturan' => 'nullable|string',
             'longitude' => 'required|numeric',
             'latitude' => 'required|numeric',

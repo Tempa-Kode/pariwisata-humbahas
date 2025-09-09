@@ -143,6 +143,16 @@
                             </div>
                         </div>
                         <div class="row mb-3">
+                            <label for="transportasi" class="col-sm-3 col-form-label">Transportasi</label>
+                            <div class="col-sm-9">
+                                <textarea class="form-control @error("transportasi") is-invalid @enderror" id="transportasi" name="transportasi"
+                                    rows="3">{{ old("transportasi", $wisata->transportasi) }}</textarea>
+                                @error("transportasi")
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="row mb-3">
                             <label for="peraturan" class="col-sm-3 col-form-label">Peraturan</label>
                             <div class="col-sm-9">
                                 <textarea class="form-control @error("peraturan") is-invalid @enderror" id="peraturan" name="peraturan"

@@ -51,6 +51,10 @@
                                 <label class="form-label fw-bold">Fasilitas:</label>
                                 <div>{{ $wisata->fasilitas ?? '-' }}</div>
                             </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Transportasi:</label>
+                                <div>{{ $wisata->transportasi ?? '-' }}</div>
+                            </div>
                         </div>
                         <div class="col-md-12">
                             <div class="mb-3">
