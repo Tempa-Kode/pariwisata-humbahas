@@ -59,7 +59,7 @@
                         <div class="col-md-12">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Deskripsi:</label>
-                                <div>{{ $wisata->deskripsi }}</div>
+                                <div>{!! $wisata->deskripsi !!}</div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Peraturan:</label>

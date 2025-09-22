@@ -31,7 +31,7 @@
                         <img src="{{ asset($item->foto) }}" alt="{{ $item->nama_wisata }}" class="img-fluid icon" style="max-width:80px;max-height:80px;">
                         <div>
                             <h3>{{ $item->nama_wisata }}</h3>
-                            <p>{{ \Illuminate\Support\Str::limit($item->deskripsi, 300, '...') }}</p>
+                            <p>{!! \Illuminate\Support\Str::limit($item->deskripsi, 300, '...') !!}</p>
                             <a href="{{ route('pengunjung.wisata.detail', $item->id_wisata) }}" class="read-more stretched-link">Lihat Detail <i class="bi bi-arrow-right"></i></a>
                         </div>
                     </div>

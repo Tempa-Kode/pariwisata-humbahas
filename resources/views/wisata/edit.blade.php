@@ -78,7 +78,8 @@
                             <label for="deskripsi" class="col-sm-3 col-form-label">Deskripsi<span
                                     class="text-danger">*</span></label>
                             <div class="col-sm-9">
-                                <textarea class="form-control @error("deskripsi") is-invalid @enderror" id="deskripsi" name="deskripsi" rows="3">{{ old("deskripsi", $wisata->deskripsi) }}</textarea>
+                                <div id="editor" style="height: 200px;"></div>
+                                <textarea class="form-control @error("deskripsi") is-invalid @enderror d-none" id="deskripsi" name="deskripsi">{{ old("deskripsi", $wisata->deskripsi) }}</textarea>
                                 @error("deskripsi")
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -297,4 +298,33 @@
             });
         });
     </script>
+@endpush
+
+@push("script")
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+
+<script type="text/javascript">
+    var quill = new Quill('#editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                ['link'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'header': [1, 2, 3, false] }],
+            ]
+        }
+    });
+
+    quill.root.innerHTML = document.getElementById('deskripsi').value;
+
+    quill.on('text-change', function() {
+        document.getElementById('deskripsi').value = quill.root.innerHTML;
+    });
+
+    document.querySelector('form').addEventListener('submit', function(e) {
+        document.getElementById('deskripsi').value = quill.root.innerHTML;
+    });
+</script>
 @endpush
