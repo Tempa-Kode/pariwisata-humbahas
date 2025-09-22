@@ -5,12 +5,20 @@
         <div class="container mb-4 mt-5" data-aos="fade-up">
             <h2 class="fw-bold">Tempat Wisata</h2>
             <p>Daftar Destinasi Wisata Kabupaten Humbang Hasundutan</p>
-            <form action="" method="get">
-                <div class="col-auto">
+            <form action="" method="get" class="row g-3">
+                <div class="col-12 col-md-9">
                     <div class="input-group">
                         <div class="input-group-text">🔍</div>
                         <input type="text" class="form-control" id="autoSizingInputGroup" name="wisata" value="{{ request()->wisata }}" placeholder="cari tempat wisata . . .">
                     </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <select name="kategori" id="kategori" class="form-select" onchange="this.form.submit()">
+                        <option value="">Filter kategori</option>
+                        @foreach($kategori as $item)
+                            <option value="{{ $item->id_kategori }}" {{ request()->kategori == $item->id_kategori ? 'selected' : '' }}>{{ $item->nama_kategori }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </form>
         </div>

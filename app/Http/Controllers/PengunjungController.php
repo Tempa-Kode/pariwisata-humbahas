@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Kategori;
 use Illuminate\Http\Request;
 
 class PengunjungController extends Controller
@@ -17,10 +18,13 @@ class PengunjungController extends Controller
     public function halamanWisata(Request $request)
     {
         $wisata = \App\Models\Wisata::filter([
-            'wisata' => $request->wisata
+            'wisata' => $request->wisata,
+            'kategori' => $request->kategori
         ])->with('kategori')->simplePaginate(10);
 
-        return view('pengunjung.wisata', compact('wisata'));
+        $kategori = Kategori::all();
+
+        return view('pengunjung.wisata', compact('wisata', 'kategori'));
     }
 
     public function detailHalamanWisata($id)

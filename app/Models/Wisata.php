@@ -38,6 +38,11 @@ class Wisata extends Model
         $query->when($filters['wisata'] ?? false, function($query, $wisata) {
             return $query->where('nama_wisata', 'like', '%' . $wisata . '%');
         });
+        $query->when($filters['kategori'] ?? false, function($query, $kategori) {
+            return $query->whereHas('kategori', function($query) use ($kategori) {
+                $query->where('kategori.id_kategori', $kategori);
+            });
+        });
 
         return $query;
     }
