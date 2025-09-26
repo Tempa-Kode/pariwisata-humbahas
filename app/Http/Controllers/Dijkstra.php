@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use App\Models\Wisata;
 use App\Models\Rute;
 
@@ -68,8 +69,21 @@ class Dijkstra extends Controller
         // Cari titik wisata terdekat dari lokasi awal menggunakan Haversine
         $wisataAwal = $this->cariWisataTerdekat($lokasiAwal, $semuaWisata);
 
+        // Hitung jarak dari posisi pengguna ke wisata terdekat
+        $jarakKeWisataAwal = $this->hitungJarakJalanSebenarnya(
+            $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+            $wisataAwal->latitude, $wisataAwal->longitude
+        );
+
+        if ($jarakKeWisataAwal === null) {
+            $jarakKeWisataAwal = $this->hitungJarakHaversine(
+                $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+                $wisataAwal->latitude, $wisataAwal->longitude
+            );
+        }
+
         // Cari SEMUA RUTE ALTERNATIF menggunakan modified Dijkstra
-        $semuaRuteAlternatif = $this->cariSemuaRuteAlternatif($graf, $semuaWisata, $wisataAwal, $wisataTujuan);
+        $semuaRuteAlternatif = $this->cariSemuaRuteAlternatif($graf, $semuaWisata, $wisataAwal, $wisataTujuan, $jarakKeWisataAwal);
 
         // Ambil rute terbaik (terpendek) sebagai rute utama
         $ruteTerbaik = !empty($semuaRuteAlternatif) ? $semuaRuteAlternatif[0] : null;
@@ -99,6 +113,7 @@ class Dijkstra extends Controller
             $semuaRuteAlternatif = [$ruteTerbaik];
         }
 
+        // Jarak ke wisata awal sudah dihitung di atas, hapus duplikasi
         // Hitung jarak dari posisi pengguna ke wisata terdekat
         $jarakKeWisataAwal = $this->hitungJarakJalanSebenarnya(
             $lokasiAwal['latitude'], $lokasiAwal['longitude'],
@@ -374,7 +389,7 @@ class Dijkstra extends Controller
     /**
      * Cari semua rute alternatif menggunakan modified Dijkstra dengan K-shortest paths
      */
-    private function cariSemuaRuteAlternatif($graf, $semuaWisata, $wisataAwal, $wisataTujuan)
+    private function cariSemuaRuteAlternatif($graf, $semuaWisata, $wisataAwal, $wisataTujuan, $jarakKeWisataAwal = 0)
     {
         $ruteAlternatif = [];
         $maxRute = 4; // Maksimal 4 rute alternatif (termasuk rute utama)
@@ -383,10 +398,10 @@ class Dijkstra extends Controller
         $rutePertama = $this->dijkstraStandard($graf, $semuaWisata, $wisataAwal, $wisataTujuan);
 
         if (!empty($rutePertama['jalur'])) {
-            $ruteAlternatif[] = $this->formatRuteInfo($rutePertama, $semuaWisata, 1);
+            $ruteAlternatif[] = $this->formatRuteInfo($rutePertama, $semuaWisata, 1, $jarakKeWisataAwal);
 
             // Log rute pertama
-            \Log::info('Rute 1 ditemukan: ' . implode(' -> ', $rutePertama['jalur']));
+            Log::info('Rute 1 ditemukan: ' . implode(' -> ', $rutePertama['jalur']));
 
             // Cari rute alternatif lainnya dengan menghapus edge satu per satu
             for ($k = 1; $k < $maxRute; $k++) {
@@ -394,7 +409,7 @@ class Dijkstra extends Controller
                 $ruteTerbaik = null;
                 $jarakTerbaik = PHP_INT_MAX;
 
-                \Log::info("Mencari rute alternatif ke-" . ($k + 1));
+                Log::info("Mencari rute alternatif ke-" . ($k + 1));
 
                 // Untuk setiap rute yang sudah ditemukan, coba buat variasi
                 foreach ($ruteAlternatif as $ruteExisting) {
@@ -408,7 +423,7 @@ class Dijkstra extends Controller
                         $ruteBaru = $this->dijkstraStandard($grafTemp, $semuaWisata, $wisataAwal, $wisataTujuan);
 
                         if (!empty($ruteBaru['jalur']) && !$this->ruteUdahAda($ruteBaru['jalur'], $ruteAlternatif)) {
-                            $ruteBaruFormatted = $this->formatRuteInfo($ruteBaru, $semuaWisata, $k + 1);
+                            $ruteBaruFormatted = $this->formatRuteInfo($ruteBaru, $semuaWisata, $k + 1, $jarakKeWisataAwal);
 
                             // Pastikan ada perbedaan jarak yang signifikan (minimal 1 km)
                             $jarakSignifikan = true;
@@ -416,7 +431,7 @@ class Dijkstra extends Controller
                                 $selisihJarak = abs($ruteBaruFormatted['jarak_rute'] - $ruteExisting['jarak_rute']);
                                 if ($selisihJarak < 1.0) { // kurang dari 1 km perbedaan
                                     $jarakSignifikan = false;
-                                    \Log::info('Rute ditolak karena jarak terlalu mirip: ' .
+                                    Log::info('Rute ditolak karena jarak terlalu mirip: ' .
                                               implode(' -> ', $ruteBaru['jalur']) .
                                               ' (' . $ruteBaruFormatted['jarak_rute'] . ' km vs ' .
                                               $ruteExisting['jarak_rute'] . ' km)');
@@ -425,7 +440,7 @@ class Dijkstra extends Controller
                             }
 
                             if ($jarakSignifikan) {
-                                \Log::info('Rute kandidat ditemukan: ' . implode(' -> ', $ruteBaru['jalur']) .
+                                Log::info('Rute kandidat ditemukan: ' . implode(' -> ', $ruteBaru['jalur']) .
                                           ' (Jarak: ' . $ruteBaruFormatted['jarak_rute'] . ' km)');
 
                                 // Cari rute terpendek dari kandidat baru
@@ -441,23 +456,23 @@ class Dijkstra extends Controller
                 // Tambahkan rute terbaik jika ditemukan
                 if ($ruteTerbaik !== null) {
                     $ruteAlternatif[] = $ruteTerbaik;
-                    \Log::info('Rute ' . ($k + 1) . ' dipilih: ' . implode(' -> ', $ruteTerbaik['jalur']) .
+                    Log::info('Rute ' . ($k + 1) . ' dipilih: ' . implode(' -> ', $ruteTerbaik['jalur']) .
                               ' (Jarak: ' . $ruteTerbaik['jarak_rute'] . ' km)');
                 } else {
                     // Jika tidak ada rute baru ditemukan, hentikan pencarian
-                    \Log::info('Tidak ada rute alternatif lagi yang ditemukan pada iterasi ' . ($k + 1));
+                    Log::info('Tidak ada rute alternatif lagi yang ditemukan pada iterasi ' . ($k + 1));
                     break;
                 }
             }            // Tambahkan rute langsung sebagai alternatif terakhir jika belum ada
-            $ruteLangsung = $this->buatRuteLangsung($wisataAwal, $wisataTujuan, count($ruteAlternatif) + 1);
+            $ruteLangsung = $this->buatRuteLangsung($wisataAwal, $wisataTujuan, count($ruteAlternatif) + 1, $jarakKeWisataAwal);
             if (!$this->ruteUdahAda($ruteLangsung['jalur'], $ruteAlternatif)) {
                 $ruteAlternatif[] = $ruteLangsung;
-                \Log::info('Rute langsung ditambahkan: ' . implode(' -> ', $ruteLangsung['jalur']));
+                Log::info('Rute langsung ditambahkan: ' . implode(' -> ', $ruteLangsung['jalur']));
             } else {
-                \Log::info('Rute langsung sudah ada, tidak ditambahkan');
+                Log::info('Rute langsung sudah ada, tidak ditambahkan');
             }
 
-            \Log::info('Total rute alternatif yang ditemukan: ' . count($ruteAlternatif));
+            Log::info('Total rute alternatif yang ditemukan: ' . count($ruteAlternatif));
         }
 
         return $ruteAlternatif;
@@ -517,7 +532,7 @@ class Dijkstra extends Controller
     /**
      * Format informasi rute untuk display
      */
-    private function formatRuteInfo($rute, $semuaWisata, $nomorRute)
+    private function formatRuteInfo($rute, $semuaWisata, $nomorRute, $jarakKeWisataAwal = 0)
     {
         $wisataMap = $semuaWisata->keyBy('id_wisata');
         $wisataTransit = [];
@@ -550,15 +565,18 @@ class Dijkstra extends Controller
             }
         }
 
+        // Total jarak termasuk jarak dari lokasi pengguna ke wisata awal (jika ada)
+        $totalJarakRute = $rute['jarak_total'] + $jarakKeWisataAwal;
+
         return [
             'nomor_rute' => $nomorRute,
             'jalur' => $rute['jalur'],
-            'jarak_rute' => $rute['jarak_total'],
-            'waktu_rute' => $this->estimasiWaktuTempuh($rute['jarak_total']),
+            'jarak_rute' => $totalJarakRute, // Sudah termasuk jarak dari lokasi pengguna
+            'waktu_rute' => $this->estimasiWaktuTempuh($totalJarakRute), // Estimasi berdasarkan total jarak
             'jumlah_transit' => count($wisataTransit),
             'wisata_transit' => $wisataTransit,
             'semua_destinasi_dilalui' => $semuaDestinasiDilalui, // Data baru untuk semua destinasi
-            'tingkat_kemudahan' => $this->tentukanTingkatKemudahan(count($wisataTransit), $rute['jarak_total']),
+            'tingkat_kemudahan' => $this->tentukanTingkatKemudahan(count($wisataTransit), $totalJarakRute),
             'warna_rute' => $this->tentukanWarnaRute($nomorRute)
         ];
     }
@@ -589,13 +607,13 @@ class Dijkstra extends Controller
         foreach ($ruteExisting as $rute) {
             // Cek apakah array jalur benar-benar identik
             if ($rute['jalur'] === $jalurBaru) {
-                \Log::info('Duplikasi ditemukan (identik): ' . implode(' -> ', $jalurBaru));
+                Log::info('Duplikasi ditemukan (identik): ' . implode(' -> ', $jalurBaru));
                 return true;
             }
 
             // Cek apakah jalur sama dengan urutan terbalik (untuk rute yang bisa bolak-balik)
             if ($rute['jalur'] === array_reverse($jalurBaru)) {
-                \Log::info('Duplikasi ditemukan (terbalik): ' . implode(' -> ', $jalurBaru));
+                Log::info('Duplikasi ditemukan (terbalik): ' . implode(' -> ', $jalurBaru));
                 return true;
             }
 
@@ -606,7 +624,7 @@ class Dijkstra extends Controller
             sort($setRuteBaru);
 
             if ($setRuteExisting === $setRuteBaru && count($rute['jalur']) === count($jalurBaru)) {
-                \Log::info('Duplikasi ditemukan (set sama): ' . implode(' -> ', $jalurBaru) .
+                Log::info('Duplikasi ditemukan (set sama): ' . implode(' -> ', $jalurBaru) .
                           ' vs existing: ' . implode(' -> ', $rute['jalur']));
                 return true;
             }
@@ -615,7 +633,7 @@ class Dijkstra extends Controller
     }    /**
      * Buat rute langsung
      */
-    private function buatRuteLangsung($wisataAwal, $wisataTujuan, $nomorRute)
+    private function buatRuteLangsung($wisataAwal, $wisataTujuan, $nomorRute, $jarakKeWisataAwal = 0)
     {
         $jarakLangsung = $this->hitungJarakJalanSebenarnya(
             $wisataAwal->latitude, $wisataAwal->longitude,
@@ -629,11 +647,14 @@ class Dijkstra extends Controller
             );
         }
 
+        // Total jarak termasuk jarak dari lokasi pengguna ke wisata awal (jika ada)
+        $totalJarakLangsung = $jarakLangsung + $jarakKeWisataAwal;
+
         return [
             'nomor_rute' => $nomorRute,
             'jalur' => [$wisataAwal->id_wisata, $wisataTujuan->id_wisata],
-            'jarak_rute' => $jarakLangsung,
-            'waktu_rute' => $this->estimasiWaktuTempuh($jarakLangsung),
+            'jarak_rute' => $totalJarakLangsung, // Sudah termasuk jarak dari lokasi pengguna
+            'waktu_rute' => $this->estimasiWaktuTempuh($totalJarakLangsung), // Estimasi berdasarkan total jarak
             'jumlah_transit' => 0,
             'wisata_transit' => [],
             'semua_destinasi_dilalui' => [
