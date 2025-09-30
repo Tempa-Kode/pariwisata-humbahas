@@ -35,7 +35,7 @@
                                         <div class="col-7">{{ $hasilRute["wisata_awal"]->nama_wisata }}
                                             ({{ number_format($hasilRute["jarak_ke_wisata_awal"], 2) }} km dari Anda)</div>
                                     </div> --}}
-                                    <div class="row mb-3">
+                                    {{-- <div class="row mb-3">
                                         <div class="col-4"><strong>Jarak</strong></div>
                                         <div class="col-1">:</div>
                                         <div class="col-7" id="jarakTempuh">
@@ -45,7 +45,7 @@
                                         <div class="col-4"><strong>Waktu Tempuh</strong></div>
                                         <div class="col-1">:</div>
                                         <div class="col-7" id="waktuTempuh">{{ $hasilRute["waktu_tempuh"] }}</div>
-                                    </div>
+                                    </div> --}}
                                 </div>
                             </div>
                         </div>

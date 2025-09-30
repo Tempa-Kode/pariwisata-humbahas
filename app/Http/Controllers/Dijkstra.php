@@ -24,10 +24,13 @@ class Dijkstra extends Controller
             'longitude' => 'required|numeric'
         ]);
 
-        $lokasiAwal = [
+        $koordinatPengguna = [
             'latitude' => $request->latitude,
             'longitude' => $request->longitude
         ];
+
+        // Dapatkan koordinat lokasi awal yang sebenarnya berdasarkan pilihan
+        $lokasiAwal = $this->dapatkanKoordinatLokasiAwal($request->lokasi_awal, $koordinatPengguna);
 
         // Tentukan nama lokasi awal berdasarkan pilihan
         $namaLokasiAwal = $this->tentukanNamaLokasiAwal($request->lokasi_awal);
@@ -57,6 +60,34 @@ class Dijkstra extends Controller
         }
     }
 
+    /**
+     * Mendapatkan koordinat lokasi awal berdasarkan pilihan pengguna
+     */
+    private function dapatkanKoordinatLokasiAwal($lokasiAwal, $koordinatPengguna)
+    {
+        switch ($lokasiAwal) {
+            case 'current':
+                return $koordinatPengguna;
+            case 'dolok_sanggul':
+                return [
+                    'latitude' => 2.252977,
+                    'longitude' => 98.748272
+                ];
+            default:
+                // Jika memilih wisata sebagai lokasi awal
+                if (is_numeric($lokasiAwal)) {
+                    $wisata = Wisata::find($lokasiAwal);
+                    if ($wisata) {
+                        return [
+                            'latitude' => $wisata->latitude,
+                            'longitude' => $wisata->longitude
+                        ];
+                    }
+                }
+                return $koordinatPengguna; // Fallback ke koordinat pengguna
+        }
+    }
+
     private function algoritmaRuteTerpendek($lokasiAwal, $wisataTujuan)
     {
         // Ambil semua data wisata dan rute
@@ -69,7 +100,7 @@ class Dijkstra extends Controller
         // Cari titik wisata terdekat dari lokasi awal menggunakan Haversine
         $wisataAwal = $this->cariWisataTerdekat($lokasiAwal, $semuaWisata);
 
-        // Hitung jarak dari posisi pengguna ke wisata terdekat
+        // Hitung jarak dari lokasi awal (bisa dari lokasi pengguna, Pusat Dolok Sanggul, atau wisata) ke wisata terdekat
         $jarakKeWisataAwal = $this->hitungJarakJalanSebenarnya(
             $lokasiAwal['latitude'], $lokasiAwal['longitude'],
             $wisataAwal->latitude, $wisataAwal->longitude
@@ -114,20 +145,10 @@ class Dijkstra extends Controller
         }
 
         // Jarak ke wisata awal sudah dihitung di atas, hapus duplikasi
-        // Hitung jarak dari posisi pengguna ke wisata terdekat
-        $jarakKeWisataAwal = $this->hitungJarakJalanSebenarnya(
-            $lokasiAwal['latitude'], $lokasiAwal['longitude'],
-            $wisataAwal->latitude, $wisataAwal->longitude
-        );
+        // Hitung jarak dari lokasi awal ke wisata terdekat (sudah dihitung sebelumnya)
+        // $jarakKeWisataAwal sudah tersedia dari perhitungan sebelumnya
 
-        if ($jarakKeWisataAwal === null) {
-            $jarakKeWisataAwal = $this->hitungJarakHaversine(
-                $lokasiAwal['latitude'], $lokasiAwal['longitude'],
-                $wisataAwal->latitude, $wisataAwal->longitude
-            );
-        }
-
-        // Total jarak = jarak dari posisi pengguna ke wisata terdekat + jarak rute wisata
+        // Total jarak = jarak dari lokasi awal (pengguna/Pusat Dolok Sanggul/wisata) ke wisata terdekat + jarak rute wisata
         $totalJarak = $jarakKeWisataAwal + $ruteTerbaik['jarak_rute'];
 
         return [
