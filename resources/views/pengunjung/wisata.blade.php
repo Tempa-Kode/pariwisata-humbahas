@@ -26,16 +26,18 @@
         <div class="container">
             <div class="row gy-3">
                 @forelse($wisata as $item)
-                <div class="col-12" data-aos="fade-up" data-aos-delay="100">
-                    <div class="service-item item-cyan position-relative">
-                        <img src="{{ asset($item->foto) }}" alt="{{ $item->nama_wisata }}" class="img-fluid icon" style="max-width:80px;max-height:80px;">
-                        <div>
-                            <h3>{{ $item->nama_wisata }}</h3>
-                            <p>{!! \Illuminate\Support\Str::limit($item->deskripsi, 300, '...') !!}</p>
-                            <a href="{{ route('pengunjung.wisata.detail', $item->id_wisata) }}" class="read-more stretched-link">Lihat Detail <i class="bi bi-arrow-right"></i></a>
+                <a href="{{ route('pengunjung.wisata.detail', $item->id_wisata) }}">
+                    <div class="col-12" data-aos="fade-up" data-aos-delay="100">
+                        <div class="service-item item-cyan position-relative">
+                            <img src="{{ asset($item->foto) }}" alt="{{ $item->nama_wisata }}" class="img-fluid icon" style="max-width:80px;max-height:80px;">
+                            <div>
+                                <h3>{{ $item->nama_wisata }}</h3>
+                                <p>{!! \Illuminate\Support\Str::limit($item->deskripsi, 300, '...') !!}</p>
+                                <a href="{{ route('pengunjung.wisata.detail', $item->id_wisata) }}" class="read-more stretched-link">Lihat Detail <i class="bi bi-arrow-right"></i></a>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </a>
                 @empty
                     <p class="fst-italic text-muted">Data wisata kosong</p>
                 @endforelse
