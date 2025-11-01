@@ -18,7 +18,6 @@ class Dijkstra extends Controller
     {
         // Validasi input
         $request->validate([
-            'lokasi_awal' => 'required',
             'lokasi_tujuan' => 'required',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric'
@@ -29,11 +28,20 @@ class Dijkstra extends Controller
             'longitude' => $request->longitude
         ];
 
-        // Dapatkan koordinat lokasi awal yang sebenarnya berdasarkan pilihan
-        $lokasiAwal = $this->dapatkanKoordinatLokasiAwal($request->lokasi_awal, $koordinatPengguna);
+        // Tentukan tipe lokasi (predefined atau search)
+        $tipeLokasiAwal = $request->tipe_lokasi ?? 'predefined';
 
-        // Tentukan nama lokasi awal berdasarkan pilihan
-        $namaLokasiAwal = $this->tentukanNamaLokasiAwal($request->lokasi_awal);
+        // Dapatkan koordinat lokasi awal yang sebenarnya berdasarkan tipe
+        if ($tipeLokasiAwal === 'search') {
+            // Lokasi dari pencarian maps
+            $lokasiAwal = $koordinatPengguna;
+            $namaLokasiAwal = $request->nama_lokasi_custom ?? 'Lokasi Pencarian';
+        } else {
+            // Lokasi dari dropdown (predefined)
+            $request->validate(['lokasi_awal' => 'required']);
+            $lokasiAwal = $this->dapatkanKoordinatLokasiAwal($request->lokasi_awal, $koordinatPengguna);
+            $namaLokasiAwal = $this->tentukanNamaLokasiAwal($request->lokasi_awal);
+        }
 
         $wisataTujuan = Wisata::findOrFail($request->lokasi_tujuan);
 

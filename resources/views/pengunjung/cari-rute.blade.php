@@ -3,47 +3,111 @@
 @section("body")
     <section id="services" class="services section light-background">
         <div class="container mb-4 mt-5" data-aos="fade-up">
-            <form action="{{ route("pengunjung.proses-rute") }}" method="post">
+            <form action="{{ route("pengunjung.proses-rute") }}" method="post" id="formCariRute">
                 @csrf
                 @method("POST")
                 <div class="row">
                     <div class="card py-5 shadow-sm">
                         <div class="row d-flex justify-content-center align-items-center flex-column gy-4">
                             <h2 class="fw-bold text-center">Cari Rute Terpendek Ke Tempat Wisata</h2>
-                            <input type /* Card hover effect */ .card:hover { transform: translateY(-2px); box-shadow: 0 8px
-                                16px rgba(0,0,0,0.1) !important; transition: all 0.3s ease; } /* Card highlight animation */
-                                .card.border-primary { border: 2px solid #007bff !important; box-shadow: 0 0 15px rgba(0,
-                                123, 255, 0.3) !important; transition: all 0.5s ease; }er" name="latitude" id="latitude"
-                                step="any" hidden>
-                            <input type="number" name="longitude" id="longitude" step="any" hidden>
+                            <input type="hidden" name="latitude" id="latitude" step="any">
+                            <input type="hidden" name="longitude" id="longitude" step="any">
+                            <input type="hidden" name="nama_lokasi_custom" id="namaLokasiCustom">
+                            <input type="hidden" name="tipe_lokasi" id="tipeLokasiValue">
+
                             <div class="col-lg-6">
+                                <!-- Pilihan Tipe Lokasi Awal -->
                                 <div class="row mb-3">
-                                    <label for="lokasiAwal" class="col-sm-3 col-form-label">Lokasi Awal</label>
+                                    <label for="tipeLokasiAwal" class="col-sm-3 col-form-label">Tipe Lokasi</label>
                                     <div class="col-sm-9">
-                                        <div class="input-group">
-                                            <select class="form-select" name="lokasi_awal" id="lokasiAwal"
-                                                data-placeholder="Pilih lokasi awal">
-                                                <option value="" hidden="">Pilih Lokasi Awal</option>
-                                                <option value="current" id="currentLocationOption">Lokasi Saat Ini
-                                                    (Mendapatkan lokasi...)</option>
-                                                <option value="dolok_sanggul" data-lat="2.252977" data-lng="98.748272">Pusat
-                                                    Dolok Sanggul</option>
-                                                @forelse($wisata as $item)
-                                                    <option value="{{ $item->id_wisata }}" data-lat="{{ $item->latitude }}"
-                                                        data-lng="{{ $item->longitude }}">
-                                                        {{ $item->nama_wisata }}
-                                                    </option>
-                                                @empty
-                                                    <option value="">Tidak ada data wisata</option>
-                                                @endforelse
-                                            </select>
-                                            <button type="button" class="btn btn-outline-primary" id="refreshLocation"
-                                                title="Refresh lokasi GPS">
-                                                <i class="fas fa-sync-alt"></i>
-                                            </button>
+                                        <select class="form-select" id="tipeLokasiAwal">
+                                            <option value="predefined">Lokasi Tersedia (GPS/Daftar Wisata)</option>
+                                            <option value="search">Cari Lokasi di Maps</option>
+                                        </select>
+                                        <small class="text-muted">Pilih cara menentukan lokasi awal</small>
+                                    </div>
+                                </div>
+
+                                <!-- Form Lokasi Predefined -->
+                                <div id="formLokasiPredefined">
+                                    <div class="row mb-3">
+                                        <label for="lokasiAwal" class="col-sm-3 col-form-label">Lokasi Awal</label>
+                                        <div class="col-sm-9">
+                                            <div class="input-group">
+                                                <select class="form-select" name="lokasi_awal" id="lokasiAwal"
+                                                    data-placeholder="Pilih lokasi awal">
+                                                    <option value="" hidden="">Pilih Lokasi Awal</option>
+                                                    <option value="current" id="currentLocationOption">Lokasi Saat Ini
+                                                        (Mendapatkan lokasi...)</option>
+                                                    <option value="dolok_sanggul" data-lat="2.252977" data-lng="98.748272">
+                                                        Pusat
+                                                        Dolok Sanggul</option>
+                                                    @forelse($wisata as $item)
+                                                        <option value="{{ $item->id_wisata }}"
+                                                            data-lat="{{ $item->latitude }}"
+                                                            data-lng="{{ $item->longitude }}">
+                                                            {{ $item->nama_wisata }}
+                                                        </option>
+                                                    @empty
+                                                        <option value="">Tidak ada data wisata</option>
+                                                    @endforelse
+                                                </select>
+                                                <button type="button" class="btn btn-outline-primary" id="refreshLocation"
+                                                    title="Refresh lokasi GPS">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">Tip: Untuk akurasi terbaik, pastikan GPS aktif dan
+                                                berada
+                                                di area terbuka</small>
                                         </div>
-                                        <small class="text-muted">Tip: Untuk akurasi terbaik, pastikan GPS aktif dan berada
-                                            di area terbuka</small>
+                                    </div>
+                                </div>
+
+                                <!-- Form Pencarian Lokasi -->
+                                <div id="formLokasiSearch" style="display: none;">
+                                    <div class="row mb-3">
+                                        <label for="searchLokasi" class="col-sm-3 col-form-label">Cari Lokasi</label>
+                                        <div class="col-sm-9">
+                                            <div class="input-group mb-2">
+                                                <input type="text" class="form-control" id="searchLokasi"
+                                                    placeholder="Contoh: Pasar Dolok Sanggul, Hotel...">
+                                                <button type="button" class="btn btn-primary" id="btnCariLokasi">
+                                                    <i class="fas fa-search"></i> Cari
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">Ketik nama lokasi dan tekan Enter atau klik
+                                                Cari</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Hasil Pencarian -->
+                                    <div class="row mb-3" id="hasilPencarianContainer" style="display: none;">
+                                        <div class="col-sm-9 offset-sm-3">
+                                            <div class="card">
+                                                <div class="card-header bg-light">
+                                                    <strong><i class="fas fa-list"></i> Hasil Pencarian</strong>
+                                                </div>
+                                                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                                                    <div id="listHasilPencarian"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lokasi Terpilih -->
+                                    <div class="row mb-3" id="lokasiTerpilihContainer" style="display: none;">
+                                        <div class="col-sm-9 offset-sm-3">
+                                            <div class="alert alert-success">
+                                                <strong><i class="fas fa-map-marker-alt"></i> Lokasi Terpilih:</strong>
+                                                <p class="mb-1 mt-2" id="namaLokasiTerpilih"></p>
+                                                <small class="text-muted" id="koordinatLokasiTerpilih"></small>
+                                                <button type="button" class="btn btn-sm btn-outline-danger float-end"
+                                                    id="btnHapusLokasi">
+                                                    <i class="fas fa-times"></i> Ganti
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="row mb-4">
@@ -64,7 +128,8 @@
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <button type="submit" class="btn btn-success w-50 mx-auto">Cari Rute Terpendek</button>
+                                    <button type="submit" class="btn btn-success w-50 mx-auto">Cari Rute
+                                        Terpendek</button>
                                 </div>
                             </div>
                         </div>
@@ -94,7 +159,8 @@
                         <!-- Peta -->
                         <div class="row">
                             <div class="col-12">
-                                <div id="petaDestinasi" style="height: 500px; border: 2px solid #ddd; border-radius: 8px;">
+                                <div id="petaDestinasi"
+                                    style="height: 500px; border: 2px solid #ddd; border-radius: 8px;">
                                     <div class="d-flex justify-content-center align-items-center h-100">
                                         <div class="spinner-border text-primary" role="status">
                                             <span class="visually-hidden">Memuat peta...</span>
@@ -144,6 +210,99 @@
                 setTimeout(() => {
                     $(this).find('i').removeClass('fa-spin');
                 }, 15000);
+            });
+
+            // Event handler untuk perubahan tipe lokasi
+            $('#tipeLokasiAwal').change(function() {
+                const tipe = $(this).val();
+
+                if (tipe === 'search') {
+                    // Tampilkan form pencarian, sembunyikan form predefined
+                    $('#formLokasiPredefined').hide();
+                    $('#formLokasiSearch').show();
+                    $('#lokasiAwal').prop('required', false);
+                    $('#tipeLokasiValue').val('search');
+                } else {
+                    // Tampilkan form predefined, sembunyikan form pencarian
+                    $('#formLokasiPredefined').show();
+                    $('#formLokasiSearch').hide();
+                    $('#lokasiAwal').prop('required', true);
+                    $('#tipeLokasiValue').val('predefined');
+
+                    // Reset form pencarian
+                    resetFormPencarian();
+                }
+            });
+
+            // Event handler untuk pencarian lokasi
+            $('#btnCariLokasi').click(function() {
+                cariLokasiDiMaps();
+            });
+
+            // Enter key pada input pencarian
+            $('#searchLokasi').keypress(function(e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    cariLokasiDiMaps();
+                }
+            });
+
+            // Event handler untuk menghapus lokasi terpilih
+            $('#btnHapusLokasi').click(function() {
+                resetFormPencarian();
+            });
+
+            // Validasi form sebelum submit
+            $('#formCariRute').submit(function(e) {
+                const tipeLokasiAwal = $('#tipeLokasiAwal').val();
+                const lokasiTujuan = $('#lokasi_tujuan').val();
+
+                // Validasi lokasi tujuan
+                if (!lokasiTujuan) {
+                    e.preventDefault();
+                    showAlert('Mohon pilih lokasi tujuan', 'warning');
+                    $('#lokasi_tujuan').focus();
+                    return false;
+                }
+
+                // Validasi berdasarkan tipe lokasi
+                if (tipeLokasiAwal === 'predefined') {
+                    const lokasiAwal = $('#lokasiAwal').val();
+                    const latitude = $('#latitude').val();
+                    const longitude = $('#longitude').val();
+
+                    if (!lokasiAwal) {
+                        e.preventDefault();
+                        showAlert('Mohon pilih lokasi awal', 'warning');
+                        $('#lokasiAwal').focus();
+                        return false;
+                    }
+
+                    if (!latitude || !longitude) {
+                        e.preventDefault();
+                        showAlert('Koordinat lokasi awal tidak valid. Silakan pilih ulang.', 'warning');
+                        $('#lokasiAwal').focus();
+                        return false;
+                    }
+                } else if (tipeLokasiAwal === 'search') {
+                    const latitude = $('#latitude').val();
+                    const longitude = $('#longitude').val();
+                    const namaLokasi = $('#namaLokasiCustom').val();
+
+                    if (!latitude || !longitude || !namaLokasi) {
+                        e.preventDefault();
+                        showAlert('Mohon cari dan pilih lokasi awal terlebih dahulu', 'warning');
+                        $('#searchLokasi').focus();
+                        return false;
+                    }
+                }
+
+                // Jika semua validasi lolos, tampilkan loading
+                const btnSubmit = $(this).find('button[type="submit"]');
+                btnSubmit.prop('disabled', true).html(
+                    '<i class="fas fa-spinner fa-spin"></i> Mencari Rute...');
+
+                return true;
             });
 
             // Event handler untuk perubahan dropdown lokasi awal
@@ -519,6 +678,217 @@
                     markerLokasiSaya.bindPopup('<b>Lokasi Anda Saat Ini</b>');
                 }
             }
+
+            // Fungsi untuk mencari lokasi di Maps menggunakan Nominatim API
+            function cariLokasiDiMaps() {
+                const query = $('#searchLokasi').val().trim();
+
+                if (query === '') {
+                    showAlert('Mohon masukkan nama lokasi yang ingin dicari', 'warning');
+                    return;
+                }
+
+                // Tampilkan loading
+                $('#btnCariLokasi').prop('disabled', true).html(
+                '<i class="fas fa-spinner fa-spin"></i> Mencari...');
+                $('#listHasilPencarian').html(
+                    '<div class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Mencari lokasi...</div>'
+                    );
+                $('#hasilPencarianContainer').show();
+
+                // Prioritaskan pencarian di area Humbang Hasundutan
+                const viewbox = '98.3,2.0,98.8,2.5'; // Koordinat bounding box Humbahas
+
+                // Panggil Nominatim API
+                $.ajax({
+                    url: 'https://nominatim.openstreetmap.org/search',
+                    method: 'GET',
+                    data: {
+                        q: query + ', Humbang Hasundutan, Sumatera Utara, Indonesia',
+                        format: 'json',
+                        limit: 10,
+                        viewbox: viewbox,
+                        bounded: 0,
+                        addressdetails: 1
+                    },
+                    success: function(data) {
+                        $('#btnCariLokasi').prop('disabled', false).html(
+                            '<i class="fas fa-search"></i> Cari');
+
+                        if (data && data.length > 0) {
+                            tampilkanHasilPencarian(data);
+                        } else {
+                            // Coba pencarian tanpa spesifik ke Humbahas
+                            cariLokasiGlobal(query);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $('#btnCariLokasi').prop('disabled', false).html(
+                            '<i class="fas fa-search"></i> Cari');
+                        $('#listHasilPencarian').html(`
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Terjadi kesalahan saat mencari lokasi. Silakan coba lagi.
+                            </div>
+                        `);
+                        console.error('Error:', error);
+                    }
+                });
+            }
+
+            // Fungsi pencarian global jika tidak ditemukan di area Humbahas
+            function cariLokasiGlobal(query) {
+                $.ajax({
+                    url: 'https://nominatim.openstreetmap.org/search',
+                    method: 'GET',
+                    data: {
+                        q: query + ', Sumatera Utara, Indonesia',
+                        format: 'json',
+                        limit: 10,
+                        addressdetails: 1
+                    },
+                    success: function(data) {
+                        if (data && data.length > 0) {
+                            tampilkanHasilPencarian(data);
+                        } else {
+                            $('#listHasilPencarian').html(`
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-info-circle"></i>
+                                    Lokasi tidak ditemukan. Coba kata kunci lain atau lebih spesifik.
+                                    <br><small>Contoh: "Pasar Dolok Sanggul", "Hotel Aek Rangat"</small>
+                                </div>
+                            `);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $('#listHasilPencarian').html(`
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Terjadi kesalahan. Silakan coba lagi.
+                            </div>
+                        `);
+                        console.error('Error:', error);
+                    }
+                });
+            }
+
+            // Fungsi untuk menampilkan hasil pencarian
+            function tampilkanHasilPencarian(results) {
+                let html = '<div class="list-group">';
+
+                results.forEach((result, index) => {
+                    const displayName = result.display_name;
+                    const lat = result.lat;
+                    const lon = result.lon;
+                    const address = result.address || {};
+
+                    // Format alamat yang lebih ringkas
+                    let shortAddress = '';
+                    if (address.road) shortAddress += address.road + ', ';
+                    if (address.village || address.town || address.city) {
+                        shortAddress += (address.village || address.town || address.city);
+                    }
+                    if (!shortAddress) shortAddress = displayName;
+
+                    html += `
+                        <a href="javascript:void(0)"
+                           class="list-group-item list-group-item-action hasil-lokasi-item"
+                           data-lat="${lat}"
+                           data-lon="${lon}"
+                           data-name="${displayName}"
+                           data-short="${shortAddress}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">
+                                    <i class="fas fa-map-marker-alt text-primary"></i>
+                                    ${shortAddress}
+                                </h6>
+                            </div>
+                            <small class="text-muted">${displayName}</small>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fas fa-location-arrow"></i>
+                                Koordinat: ${parseFloat(lat).toFixed(6)}, ${parseFloat(lon).toFixed(6)}
+                            </small>
+                        </a>
+                    `;
+                });
+
+                html += '</div>';
+                $('#listHasilPencarian').html(html);
+
+                // Event handler untuk memilih lokasi
+                $('.hasil-lokasi-item').click(function() {
+                    const lat = $(this).data('lat');
+                    const lon = $(this).data('lon');
+                    const name = $(this).data('name');
+                    const shortName = $(this).data('short');
+
+                    pilihLokasiDariPencarian(lat, lon, name, shortName);
+                });
+            }
+
+            // Fungsi untuk memilih lokasi dari hasil pencarian
+            function pilihLokasiDariPencarian(lat, lon, fullName, shortName) {
+                // Set koordinat ke hidden input
+                $('#latitude').val(lat);
+                $('#longitude').val(lon);
+                $('#namaLokasiCustom').val(shortName);
+
+                // Tampilkan lokasi terpilih
+                $('#namaLokasiTerpilih').text(shortName);
+                $('#koordinatLokasiTerpilih').html(`
+                    <i class="fas fa-location-arrow"></i>
+                    Koordinat: ${parseFloat(lat).toFixed(6)}, ${parseFloat(lon).toFixed(6)}
+                    <br><small>${fullName}</small>
+                `);
+
+                // Sembunyikan hasil pencarian, tampilkan lokasi terpilih
+                $('#hasilPencarianContainer').hide();
+                $('#lokasiTerpilihContainer').show();
+
+                // Berikan feedback
+                showAlert('Lokasi berhasil dipilih: ' + shortName, 'success');
+
+                // Update marker di peta jika ada
+                if (petaDestinasi) {
+                    // Hapus marker lama jika ada
+                    if (markerLokasiSaya) {
+                        petaDestinasi.removeLayer(markerLokasiSaya);
+                    }
+
+                    // Tambahkan marker baru
+                    markerLokasiSaya = L.marker([lat, lon], {
+                        icon: L.divIcon({
+                            className: 'marker-lokasi-search',
+                            html: '<div style="background-color: #ff6b6b; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"><i class="fas fa-search-location"></i></div>',
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12]
+                        })
+                    }).addTo(petaDestinasi);
+
+                    markerLokasiSaya.bindPopup(`<b>Lokasi Awal (Pencarian)</b><br>${shortName}`).openPopup();
+
+                    // Zoom ke lokasi
+                    petaDestinasi.setView([lat, lon], 14);
+                }
+            }
+
+            // Fungsi untuk reset form pencarian
+            function resetFormPencarian() {
+                $('#searchLokasi').val('');
+                $('#hasilPencarianContainer').hide();
+                $('#lokasiTerpilihContainer').hide();
+                $('#listHasilPencarian').html('');
+                $('#latitude').val('');
+                $('#longitude').val('');
+                $('#namaLokasiCustom').val('');
+
+                // Hapus marker pencarian jika ada
+                if (markerLokasiSaya && petaDestinasi) {
+                    petaDestinasi.removeLayer(markerLokasiSaya);
+                    markerLokasiSaya = null;
+                }
+            }
         });
 
         // Fungsi global untuk memilih destinasi dari peta
@@ -727,6 +1097,90 @@
         .btn-sm:hover {
             transform: scale(1.05);
             transition: transform 0.2s ease;
+        }
+
+        /* Styling untuk form pencarian lokasi */
+        .hasil-lokasi-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .hasil-lokasi-item:hover {
+            background-color: #f8f9fa;
+            border-left: 3px solid #007bff;
+            transform: translateX(3px);
+        }
+
+        .hasil-lokasi-item h6 {
+            color: #212529;
+            font-size: 14px;
+        }
+
+        .hasil-lokasi-item small {
+            font-size: 12px;
+        }
+
+        #hasilPencarianContainer .card,
+        #lokasiTerpilihContainer .alert {
+            animation: fadeInDown 0.3s ease;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Marker untuk lokasi pencarian */
+        .marker-lokasi-search {
+            border: none !important;
+            background: transparent !important;
+        }
+
+        /* Styling untuk tipe lokasi dropdown */
+        #tipeLokasiAwal {
+            font-weight: 500;
+        }
+
+        #tipeLokasiAwal option {
+            padding: 8px;
+        }
+
+        /* Loading state untuk button */
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Highlight untuk input focus */
+        #searchLokasi:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        /* Card body scroll styling */
+        #hasilPencarianContainer .card-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #hasilPencarianContainer .card-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        #hasilPencarianContainer .card-body::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        #hasilPencarianContainer .card-body::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
     </style>
 @endpush
