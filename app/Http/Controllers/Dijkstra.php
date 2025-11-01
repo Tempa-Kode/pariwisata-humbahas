@@ -16,6 +16,9 @@ class Dijkstra extends Controller
 
     public function cariRuteTerpendek(Request $request)
     {
+        // Tingkatkan execution time limit untuk algoritma yang kompleks
+        set_time_limit(120); // 2 menit
+
         // Validasi input
         $request->validate([
             'lokasi_tujuan' => 'required',
@@ -105,10 +108,10 @@ class Dijkstra extends Controller
         // Buat graf dari data rute
         $graf = $this->buatGraf($semuaWisata, $semuaRute);
 
-        // Cari titik wisata terdekat dari lokasi awal menggunakan Haversine
-        $wisataAwal = $this->cariWisataTerdekat($lokasiAwal, $semuaWisata);
+        // PERBAIKAN: Cari wisata yang berada di jalur rute langsung terlebih dahulu
+        $wisataAwal = $this->cariWisataTerbaikDiJalur($lokasiAwal, $wisataTujuan, $semuaWisata);
 
-        // Hitung jarak dari lokasi awal (bisa dari lokasi pengguna, Pusat Dolok Sanggul, atau wisata) ke wisata terdekat
+        // Hitung jarak dari lokasi awal ke wisata terdekat menggunakan jalan sebenarnya
         $jarakKeWisataAwal = $this->hitungJarakJalanSebenarnya(
             $lokasiAwal['latitude'], $lokasiAwal['longitude'],
             $wisataAwal->latitude, $wisataAwal->longitude
@@ -207,19 +210,190 @@ class Dijkstra extends Controller
         return $jarakAngka > 0 ? $jarakAngka : 0;
     }
 
-    private function cariWisataTerdekat($lokasiAwal, $semuaWisata)
+    /**
+     * Cari wisata terbaik yang berada di jalur rute
+     * Prioritas: wisata yang dilalui di jalur rute langsung ke tujuan
+     * OPTIMIZED: Menggunakan Haversine untuk filter awal, lalu OSRM untuk kandidat terbaik
+     */
+    private function cariWisataTerbaikDiJalur($lokasiAwal, $wisataTujuan, $semuaWisata)
+    {
+        // STEP 1: Hitung jarak lurus (Haversine) untuk filter cepat
+        $jarakLurusAwalKeTujuan = $this->hitungJarakHaversine(
+            $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+            $wisataTujuan->latitude, $wisataTujuan->longitude
+        );
+
+        $kandidatWisata = [];
+
+        // STEP 2: Filter wisata menggunakan Haversine (cepat, tanpa API call)
+        foreach ($semuaWisata as $wisata) {
+            // Skip jika wisata adalah tujuan akhir
+            if ($wisata->id_wisata === $wisataTujuan->id_wisata) {
+                continue;
+            }
+
+            // Hitung jarak lurus
+            $jarakLurusAwalKeWisata = $this->hitungJarakHaversine(
+                $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+                $wisata->latitude, $wisata->longitude
+            );
+
+            $jarakLurusWisataKeTujuan = $this->hitungJarakHaversine(
+                $wisata->latitude, $wisata->longitude,
+                $wisataTujuan->latitude, $wisataTujuan->longitude
+            );
+
+            $totalJarakLurus = $jarakLurusAwalKeWisata + $jarakLurusWisataKeTujuan;
+            $selisihLurus = abs($totalJarakLurus - $jarakLurusAwalKeTujuan);
+
+            // Filter: hanya wisata dengan selisih <= 15% (lebih longgar untuk filter awal)
+            $toleransiFilter = $jarakLurusAwalKeTujuan * 0.15;
+
+            if ($selisihLurus <= $toleransiFilter) {
+                $kandidatWisata[] = [
+                    'wisata' => $wisata,
+                    'jarak_lurus' => $jarakLurusAwalKeWisata,
+                    'selisih_lurus' => $selisihLurus
+                ];
+            }
+        }
+
+        // STEP 3: Jika tidak ada kandidat, gunakan wisata terdekat
+        if (empty($kandidatWisata)) {
+            Log::info("Tidak ada wisata di jalur (filter Haversine), mencari wisata terdekat");
+            return $this->cariWisataTerdekatCepat($lokasiAwal, $semuaWisata, $wisataTujuan->id_wisata);
+        }
+
+        // STEP 4: Sort kandidat berdasarkan jarak lurus (terdekat dulu)
+        usort($kandidatWisata, function($a, $b) {
+            return $a['jarak_lurus'] <=> $b['jarak_lurus'];
+        });
+
+        // STEP 5: Ambil maksimal 5 kandidat teratas untuk validasi dengan OSRM
+        $kandidatTeratas = array_slice($kandidatWisata, 0, 5);
+
+        Log::info("Filter kandidat: " . count($kandidatWisata) . " wisata, akan validasi " . count($kandidatTeratas) . " teratas dengan OSRM");
+
+        // STEP 6: Validasi dengan OSRM (hanya untuk kandidat terpilih)
+        $jarakJalanAwalKeTujuan = $this->hitungJarakJalanSebenarnya(
+            $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+            $wisataTujuan->latitude, $wisataTujuan->longitude
+        );
+
+        if ($jarakJalanAwalKeTujuan === null) {
+            $jarakJalanAwalKeTujuan = $jarakLurusAwalKeTujuan;
+        }
+
+        $wisataTerbaik = null;
+        $jarakTerpendek = PHP_FLOAT_MAX;
+
+        foreach ($kandidatTeratas as $kandidat) {
+            $wisata = $kandidat['wisata'];
+
+            // Hitung jarak jalan dari awal ke wisata
+            $jarakJalanAwalKeWisata = $this->hitungJarakJalanSebenarnya(
+                $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+                $wisata->latitude, $wisata->longitude
+            );
+
+            if ($jarakJalanAwalKeWisata === null) {
+                $jarakJalanAwalKeWisata = $kandidat['jarak_lurus'];
+            }
+
+            // Hitung jarak jalan dari wisata ke tujuan
+            $jarakJalanWisataKeTujuan = $this->hitungJarakJalanSebenarnya(
+                $wisata->latitude, $wisata->longitude,
+                $wisataTujuan->latitude, $wisataTujuan->longitude
+            );
+
+            if ($jarakJalanWisataKeTujuan === null) {
+                $jarakJalanWisataKeTujuan = $this->hitungJarakHaversine(
+                    $wisata->latitude, $wisata->longitude,
+                    $wisataTujuan->latitude, $wisataTujuan->longitude
+                );
+            }
+
+            $totalJarakJalan = $jarakJalanAwalKeWisata + $jarakJalanWisataKeTujuan;
+            $selisihJalan = abs($totalJarakJalan - $jarakJalanAwalKeTujuan);
+
+            // Toleransi final 10% dari jarak jalan
+            $toleransiFinal = $jarakJalanAwalKeTujuan * 0.10;
+
+            if ($selisihJalan <= $toleransiFinal && $jarakJalanAwalKeWisata < $jarakTerpendek) {
+                $jarakTerpendek = $jarakJalanAwalKeWisata;
+                $wisataTerbaik = $wisata;
+
+                Log::info("Wisata di jalur: {$wisata->nama_wisata}, jarak: " . number_format($jarakJalanAwalKeWisata, 2) . " km, selisih: " . number_format($selisihJalan, 2) . " km");
+            }
+        }
+
+        // STEP 7: Fallback ke kandidat terdekat jika tidak ada yang lolos validasi
+        if ($wisataTerbaik === null) {
+            $wisataTerbaik = $kandidatTeratas[0]['wisata'];
+            Log::info("Menggunakan kandidat terdekat: {$wisataTerbaik->nama_wisata}");
+        } else {
+            Log::info("Wisata terbaik di jalur: {$wisataTerbaik->nama_wisata}");
+        }
+
+        return $wisataTerbaik;
+    }
+
+    /**
+     * Cari wisata terdekat menggunakan Haversine (cepat, tanpa API call)
+     */
+    private function cariWisataTerdekatCepat($lokasiAwal, $semuaWisata, $skipWisataId = null)
     {
         $wisataTerdekat = null;
         $jarakTerpendek = PHP_FLOAT_MAX;
 
         foreach ($semuaWisata as $wisata) {
-            $jarak = $this->hitungJarakHaversine(
+            // Skip wisata tertentu jika diminta
+            if ($skipWisataId && $wisata->id_wisata === $skipWisataId) {
+                continue;
+            }
+
+            // Gunakan Haversine (cepat)
+            $jarakLurus = $this->hitungJarakHaversine(
                 $lokasiAwal['latitude'], $lokasiAwal['longitude'],
                 $wisata->latitude, $wisata->longitude
             );
 
-            if ($jarak < $jarakTerpendek) {
-                $jarakTerpendek = $jarak;
+            if ($jarakLurus < $jarakTerpendek) {
+                $jarakTerpendek = $jarakLurus;
+                $wisataTerdekat = $wisata;
+            }
+        }
+
+        return $wisataTerdekat;
+    }
+
+    private function cariWisataTerdekat($lokasiAwal, $semuaWisata, $skipWisataId = null)
+    {
+        $wisataTerdekat = null;
+        $jarakTerpendek = PHP_FLOAT_MAX;
+
+        foreach ($semuaWisata as $wisata) {
+            // Skip wisata tertentu jika diminta
+            if ($skipWisataId && $wisata->id_wisata === $skipWisataId) {
+                continue;
+            }
+
+            // Prioritaskan jarak jalan sebenarnya daripada jarak lurus
+            $jarakJalan = $this->hitungJarakJalanSebenarnya(
+                $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+                $wisata->latitude, $wisata->longitude
+            );
+
+            // Jika API gagal, fallback ke Haversine
+            if ($jarakJalan === null) {
+                $jarakJalan = $this->hitungJarakHaversine(
+                    $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+                    $wisata->latitude, $wisata->longitude
+                );
+            }
+
+            if ($jarakJalan < $jarakTerpendek) {
+                $jarakTerpendek = $jarakJalan;
                 $wisataTerdekat = $wisata;
             }
         }
@@ -744,12 +918,13 @@ class Dijkstra extends Controller
         try {
             $konteks = stream_context_create([
                 'http' => [
-                    'timeout' => 10,
-                    'user_agent' => 'Pariwisata Humbang Hasundutan/1.0'
+                    'timeout' => 3, // Reduced dari 10 ke 3 detik
+                    'user_agent' => 'Pariwisata Humbang Hasundutan/1.0',
+                    'ignore_errors' => true
                 ]
             ]);
 
-            $responJSON = file_get_contents($url, false, $konteks);
+            $responJSON = @file_get_contents($url, false, $konteks);
 
             if ($responJSON === false) {
                 return null;
@@ -758,6 +933,7 @@ class Dijkstra extends Controller
             return json_decode($responJSON, true);
 
         } catch (\Exception $e) {
+            Log::warning("API Routing error: " . $e->getMessage());
             return null;
         }
     }
