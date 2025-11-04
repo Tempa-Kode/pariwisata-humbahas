@@ -146,8 +146,46 @@
                         <h3 class="fw-bold text-center mb-4">Peta Destinasi Wisata Humbahas</h3>
                         <p class="text-center text-muted mb-4">Klik pada marker untuk melihat detail destinasi wisata</p>
 
+                        <!-- Info Destinasi Terdekat -->
+                        <div class="row mb-3" id="infoDestinasiTerdekat" style="display: none;">
+                            <div class="col-md-10 mx-auto">
+                                <div class="alert alert-info mb-2" role="alert">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div>
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Menampilkan 5 destinasi terdekat</strong> dari lokasi yang Anda pilih
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                            id="btnTampilkanSemua">
+                                            <i class="fas fa-eye"></i> Tampilkan Semua
+                                        </button>
+                                    </div>
+                                    <!-- Legend Marker -->
+                                    <div class="d-flex gap-3 mt-3 pt-2 border-top">
+                                        <div class="d-flex align-items-center">
+                                            <div style="width: 20px; height: 20px; background-color: #28a745; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"
+                                                class="me-2"></div>
+                                            <small><i class="fas fa-map-marker-alt text-success"></i> Lokasi Awal
+                                                Anda</small>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <div style="width: 20px; height: 20px; background-color: #007bff; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"
+                                                class="me-2"></div>
+                                            <small><i class="fas fa-map-marker-alt text-primary"></i> Destinasi
+                                                Wisata</small>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <div style="width: 20px; height: 20px; background-color: #dc3545; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"
+                                                class="me-2"></div>
+                                            <small><i class="fas fa-star text-danger"></i> Destinasi Unggulan</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Filter Kategori -->
-                        <div class="row mb-3">
+                        <div class="row mb-3" id="filterKategoriContainer">
                             <div class="col-md-6 mx-auto">
                                 <select class="form-select" id="filterKategori">
                                     <option value="">Semua Kategori</option>
@@ -185,6 +223,7 @@
             let petaDestinasi = null;
             let markersDestinasi = [];
             let markerLokasiSaya = null;
+            let markerLokasiAwalPencarian = null; // Marker khusus untuk lokasi awal dari pencarian
 
             // Dapatkan lokasi pengguna saat halaman dimuat
             dapatkanLokasiPengguna();
@@ -198,6 +237,36 @@
             // Event handler untuk filter kategori
             $('#filterKategori').change(function() {
                 filterDestinasiByKategori($(this).val());
+            });
+
+            // Event handler untuk tombol "Tampilkan Semua"
+            $('#btnTampilkanSemua').click(function() {
+                // Sembunyikan info destinasi terdekat
+                $('#infoDestinasiTerdekat').hide();
+
+                // Tampilkan kembali filter kategori
+                $('#filterKategoriContainer').show();
+
+                // Reset filter kategori
+                $('#filterKategori').val('');
+
+                // Hapus marker lokasi awal pencarian jika ada
+                if (markerLokasiAwalPencarian && petaDestinasi) {
+                    petaDestinasi.removeLayer(markerLokasiAwalPencarian);
+                    markerLokasiAwalPencarian = null;
+                }
+
+                // Tampilkan semua destinasi
+                if (window.dataWisata) {
+                    tampilkanDestinasi(window.dataWisata);
+                }
+
+                // Zoom kembali ke view default Humbahas
+                if (petaDestinasi) {
+                    petaDestinasi.setView([2.288971175704209, 98.53564577695926], 10);
+                }
+
+                showAlert('Menampilkan semua destinasi wisata', 'success');
             });
 
             // Event handler untuk tombol refresh lokasi
@@ -585,9 +654,20 @@
                         }).addTo(petaDestinasi);
 
                         // Popup dengan informasi wisata
+                        let jarakInfo = '';
+                        if (wisata.jarak !== undefined) {
+                            jarakInfo = `
+                                <div class="alert alert-info py-1 px-2 mb-2" style="font-size: 12px;">
+                                    <i class="fas fa-route"></i>
+                                    <strong>Jarak: ${wisata.jarak.toFixed(2)} km dari lokasi Anda</strong>
+                                </div>
+                            `;
+                        }
+
                         const popupContent = `
                             <div class="wisata-popup" style="min-width: 200px;">
                                 <h6 class="fw-bold mb-2">${wisata.nama_wisata}</h6>
+                                ${jarakInfo}
                                 ${wisata.destinasi_unggulan == 1 ? '<span class="badge bg-danger mb-2">Destinasi Unggulan</span><br>' : ''}
                                 <small class="text-muted"><i class="fas fa-map-marker-alt"></i> ${wisata.lokasi || 'Lokasi tidak tersedia'}</small><br>
                                 <small class="text-muted"><i class="fas fa-clock"></i> ${wisata.jam_operasional || 'Jam operasional tidak tersedia'}</small><br>
@@ -690,10 +770,10 @@
 
                 // Tampilkan loading
                 $('#btnCariLokasi').prop('disabled', true).html(
-                '<i class="fas fa-spinner fa-spin"></i> Mencari...');
+                    '<i class="fas fa-spinner fa-spin"></i> Mencari...');
                 $('#listHasilPencarian').html(
                     '<div class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Mencari lokasi...</div>'
-                    );
+                );
                 $('#hasilPencarianContainer').show();
 
                 // Prioritaskan pencarian di area Humbang Hasundutan
@@ -859,10 +939,10 @@
                     // Tambahkan marker baru
                     markerLokasiSaya = L.marker([lat, lon], {
                         icon: L.divIcon({
+                            html: '<i class="fas fa-search-location fa-2x text-success"></i>',
                             className: 'marker-lokasi-search',
-                            html: '<div style="background-color: #ff6b6b; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"><i class="fas fa-search-location"></i></div>',
-                            iconSize: [24, 24],
-                            iconAnchor: [12, 12]
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 30]
                         })
                     }).addTo(petaDestinasi);
 
@@ -871,6 +951,9 @@
                     // Zoom ke lokasi
                     petaDestinasi.setView([lat, lon], 14);
                 }
+
+                // Tampilkan 5 destinasi terdekat dari lokasi yang dipilih
+                tampilkan5DestinasiTerdekat(lat, lon, shortName);
             }
 
             // Fungsi untuk reset form pencarian
@@ -888,6 +971,168 @@
                     petaDestinasi.removeLayer(markerLokasiSaya);
                     markerLokasiSaya = null;
                 }
+
+                // Hapus marker lokasi awal pencarian jika ada
+                if (markerLokasiAwalPencarian && petaDestinasi) {
+                    petaDestinasi.removeLayer(markerLokasiAwalPencarian);
+                    markerLokasiAwalPencarian = null;
+                }
+
+                // Sembunyikan info destinasi terdekat
+                $('#infoDestinasiTerdekat').hide();
+
+                // Tampilkan kembali filter kategori
+                $('#filterKategoriContainer').show();
+
+                // Tampilkan semua destinasi kembali
+                if (window.dataWisata) {
+                    tampilkanDestinasi(window.dataWisata);
+                }
+
+                // Zoom kembali ke view default
+                if (petaDestinasi) {
+                    petaDestinasi.setView([2.288971175704209, 98.53564577695926], 10);
+                }
+            }
+
+            // Fungsi untuk menghitung jarak antara dua koordinat menggunakan Haversine formula
+            function hitungJarak(lat1, lon1, lat2, lon2) {
+                const R = 6371; // Radius bumi dalam kilometer
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                const jarak = R * c;
+                return jarak;
+            }
+
+            // Fungsi untuk menampilkan 5 destinasi terdekat dari lokasi yang dipilih
+            function tampilkan5DestinasiTerdekat(lat, lon, namaLokasi) {
+                if (!window.dataWisata || window.dataWisata.length === 0) {
+                    return;
+                }
+
+                // Hitung jarak setiap destinasi dari lokasi yang dipilih
+                const dataWithDistance = window.dataWisata.map(wisata => {
+                    if (wisata.latitude && wisata.longitude) {
+                        const jarak = hitungJarak(
+                            parseFloat(lat),
+                            parseFloat(lon),
+                            parseFloat(wisata.latitude),
+                            parseFloat(wisata.longitude)
+                        );
+                        return {
+                            ...wisata,
+                            jarak: jarak
+                        };
+                    }
+                    return null;
+                }).filter(w => w !== null);
+
+                // Urutkan berdasarkan jarak dan ambil 5 terdekat
+                const destinasiTerdekat = dataWithDistance
+                    .sort((a, b) => a.jarak - b.jarak)
+                    .slice(0, 5);
+
+                // Hapus semua marker destinasi
+                markersDestinasi.forEach(marker => petaDestinasi.removeLayer(marker));
+                markersDestinasi = [];
+
+                // Tampilkan hanya 5 destinasi terdekat
+                tampilkanDestinasi(destinasiTerdekat);
+
+                // Hapus marker lokasi awal pencarian lama jika ada
+                if (markerLokasiAwalPencarian) {
+                    petaDestinasi.removeLayer(markerLokasiAwalPencarian);
+                }
+
+                // Tambahkan marker lokasi awal pencarian dengan styling yang berbeda
+                markerLokasiAwalPencarian = L.marker([lat, lon], {
+                    icon: L.divIcon({
+                        className: 'marker-lokasi-awal-pencarian',
+                        html: `<div style="background-color: #28a745; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 3px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.4); position: relative;">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <div style="position: absolute; bottom: -8px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid #28a745;"></div>
+                            </div>`,
+                        iconSize: [35, 43],
+                        iconAnchor: [17, 43],
+                        popupAnchor: [0, -43]
+                    })
+                }).addTo(petaDestinasi);
+
+                // Popup untuk marker lokasi awal
+                const popupLokasiAwal = `
+                    <div style="min-width: 180px;">
+                        <h6 class="fw-bold mb-2 text-success">
+                            <i class="fas fa-search-location"></i> Lokasi Awal Anda
+                        </h6>
+                        <p class="mb-1"><strong>${namaLokasi}</strong></p>
+                        <small class="text-muted">
+                            <i class="fas fa-location-arrow"></i>
+                            ${parseFloat(lat).toFixed(6)}, ${parseFloat(lon).toFixed(6)}
+                        </small>
+                        <hr class="my-2">
+                        <small class="text-info">
+                            <i class="fas fa-info-circle"></i>
+                            Titik awal pencarian rute
+                        </small>
+                    </div>
+                `;
+
+                markerLokasiAwalPencarian.bindPopup(popupLokasiAwal);
+
+                // Buat bounds untuk zoom otomatis ke area dengan destinasi terdekat dan lokasi awal
+                const bounds = L.latLngBounds([
+                    [lat, lon]
+                ]);
+                destinasiTerdekat.forEach(wisata => {
+                    if (wisata.latitude && wisata.longitude) {
+                        bounds.extend([wisata.latitude, wisata.longitude]);
+                    }
+                });
+
+                // Zoom peta untuk menampilkan semua marker
+                petaDestinasi.fitBounds(bounds, {
+                    padding: [50, 50]
+                });
+
+                // Tampilkan info destinasi terdekat
+                $('#infoDestinasiTerdekat').slideDown();
+
+                // Sembunyikan filter kategori saat menampilkan destinasi terdekat
+                $('#filterKategoriContainer').slideUp();
+
+                // Tampilkan info di console untuk debugging
+                console.log('Lokasi Awal:', {
+                    nama: namaLokasi,
+                    lat: parseFloat(lat).toFixed(6),
+                    lon: parseFloat(lon).toFixed(6)
+                });
+                console.log('5 Destinasi Terdekat:', destinasiTerdekat.map(w => ({
+                    nama: w.nama_wisata,
+                    jarak: w.jarak.toFixed(2) + ' km'
+                })));
+
+                // Berikan notifikasi dengan daftar destinasi
+                let destinasiList = destinasiTerdekat.map((w, index) =>
+                    `${index + 1}. ${w.nama_wisata} (${w.jarak.toFixed(2)} km)`
+                ).join('<br>');
+
+                showAlert(`Menampilkan 5 destinasi terdekat dari lokasi Anda`, 'info');
+
+                // Buka popup marker lokasi awal setelah 1 detik
+                setTimeout(() => {
+                    markerLokasiAwalPencarian.openPopup();
+                }, 800);
+
+                // Scroll ke section peta
+                setTimeout(() => {
+                    $('html, body').animate({
+                        scrollTop: $('#petaDestinasi').offset().top - 150
+                    }, 500);
+                }, 300);
             }
         });
 
@@ -986,9 +1231,27 @@
         }
 
         .marker-destinasi,
-        .marker-lokasi-saya {
+        .marker-lokasi-saya,
+        .marker-lokasi-awal-pencarian {
             border: none !important;
             background: transparent !important;
+        }
+
+        /* Animasi untuk marker lokasi awal pencarian */
+        .marker-lokasi-awal-pencarian {
+            animation: markerBounce 1s ease-in-out 2;
+        }
+
+        @keyframes markerBounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
         .legend-peta {
@@ -1134,6 +1397,46 @@
             to {
                 opacity: 1;
                 transform: translateY(0);
+            }
+        }
+
+        /* Styling untuk info destinasi terdekat */
+        #infoDestinasiTerdekat .alert {
+            animation: slideInDown 0.4s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #btnTampilkanSemua:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s ease;
+        }
+
+        /* Highlight marker dengan jarak */
+        .wisata-popup .alert-info {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
             }
         }
 
