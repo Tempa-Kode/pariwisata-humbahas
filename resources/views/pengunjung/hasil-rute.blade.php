@@ -73,16 +73,10 @@
                                                         <tr>
                                                             <th class="text-center" width="5%">#</th>
                                                             <th width="15%">
-                                                                <i class="fas fa-road text-primary"></i> Jenis Rute
-                                                            </th>
-                                                            <th width="15%">
                                                                 <i class="fas fa-ruler text-success"></i> Jarak
                                                             </th>
                                                             <th width="15%">
                                                                 <i class="fas fa-clock text-warning"></i> Waktu
-                                                            </th>
-                                                            <th width="10%">
-                                                                <i class="fas fa-exchange-alt text-info"></i> Transit
                                                             </th>
                                                             <th width="25%">
                                                                 <i class="fas fa-route text-secondary"></i> Destinasi yang
@@ -106,20 +100,6 @@
                                                                     </div>
                                                                 </td>
                                                                 <td>
-                                                                    @if ($index === 0)
-                                                                        <span class="badge bg-primary"><i
-                                                                                class="fas fa-crown"></i> Terpendek</span>
-                                                                    @elseif($rute["jumlah_transit"] === 0)
-                                                                        <span class="badge bg-success"><i
-                                                                                class="fas fa-arrow-right"></i>
-                                                                            Langsung</span>
-                                                                    @else
-                                                                        <span class="badge bg-info"><i
-                                                                                class="fas fa-route"></i> Dengan
-                                                                            Transit</span>
-                                                                    @endif
-                                                                </td>
-                                                                <td>
                                                                     <strong
                                                                         class="text-success">{{ number_format($rute["jarak_rute"], 1) }}
                                                                         km</strong>
@@ -134,18 +114,7 @@
                                                                 </td>
                                                                 <td>
                                                                     <strong
-                                                                        class="text-warning">{{ $rute["waktu_rute"] }}</strong>
-                                                                </td>
-                                                                <td class="text-center">
-                                                                    @if ($rute["jumlah_transit"] === 0)
-                                                                        <span class="badge bg-light text-dark">
-                                                                            <i class="fas fa-check"></i> Tanpa Transit
-                                                                        </span>
-                                                                    @else
-                                                                        <span class="badge bg-warning text-dark">
-                                                                            {{ $rute["jumlah_transit"] }} Transit
-                                                                        </span>
-                                                                    @endif
+                                                                        class="text-warning">{{ $rute["waktu_rute"] }} 🚗/🏍️</strong>
                                                                 </td>
                                                                 <td>
                                                                     @if (!empty($rute["semua_destinasi_dilalui"]))
@@ -266,6 +235,138 @@
                                                             <i class="fas fa-route"></i>
                                                             Rute 1 sedang aktif
                                                         </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- Card Rute Terpendek Terpilih --}}
+                        @if (isset($hasilRute["semua_rute_alternatif"]) && count($hasilRute["semua_rute_alternatif"]) > 0)
+                            @php
+                                $ruteTerpendek = $hasilRute["semua_rute_alternatif"][0]; // Ambil rute pertama (terpendek)
+                            @endphp
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card border-0 shadow-sm bg-gradient-light">
+                                        <div class="card-header bg-primary text-white">
+                                            <h5 class="mb-0 d-flex align-items-center text-white">
+                                                <i class="fas fa-crown me-2"></i>
+                                                Rute Terpendek yang Direkomendasikan
+                                            </h5>
+                                            <small class="text-light">Detail lengkap rute tercepat menuju destinasi
+                                                Anda</small>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <!-- Kolom Kiri: Info Utama -->
+                                                <div class="col-md-6">
+                                                    <div class="info-box mb-3 p-3 bg-light rounded">
+                                                        <h6 class="fw-bold text-primary mb-3">
+                                                            <i class="fas fa-info-circle"></i> Informasi Rute
+                                                        </h6>
+                                                        <div class="row mb-2">
+                                                            <div class="col-5"><i class="fas fa-hashtag text-muted"></i>
+                                                                <strong>Nomor Rute</strong>
+                                                            </div>
+                                                            <div class="col-1">:</div>
+                                                            <div class="col-6">
+                                                                <span class="badge"
+                                                                    style="background-color: {{ $ruteTerpendek["warna_rute"] ?? "#007bff" }}; font-size: 14px;">
+                                                                    Rute {{ $ruteTerpendek["nomor_rute"] }}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-2">
+                                                            <div class="col-5"><i class="fas fa-ruler text-muted"></i>
+                                                                <strong>Jarak Tempuh</strong>
+                                                            </div>
+                                                            <div class="col-1">:</div>
+                                                            <div class="col-6">
+                                                                <span class="text-success fw-bold fs-5">
+                                                                    {{ number_format($ruteTerpendek["jarak_rute"], 2) }} km
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-2">
+                                                            <div class="col-5"><i class="fas fa-clock text-muted"></i>
+                                                                <strong>Waktu Tempuh</strong>
+                                                            </div>
+                                                            <div class="col-1">:</div>
+                                                            <div class="col-6">
+                                                                <span class="text-warning fw-bold fs-5">
+                                                                    {{ $ruteTerpendek["waktu_rute"] }} 🚗/🏍️
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Kolom Kanan: Destinasi Dilalui -->
+                                                <div class="col-md-6">
+                                                    <div class="route-path-box p-3 bg-light rounded">
+                                                        <h6 class="fw-bold text-primary mb-3">
+                                                            <i class="fas fa-map-marked-alt"></i> Jalur Perjalanan
+                                                        </h6>
+                                                        @if (!empty($ruteTerpendek["semua_destinasi_dilalui"]))
+                                                            <div class="route-timeline">
+                                                                @foreach ($ruteTerpendek["semua_destinasi_dilalui"] as $index => $destinasi)
+                                                                    <div class="timeline-item d-flex mb-3">
+                                                                        <div class="timeline-marker me-3">
+                                                                            @if ($destinasi["posisi"] === "awal")
+                                                                                <div class="marker-circle bg-success"
+                                                                                    title="Titik Awal">
+                                                                                    <i class="fas fa-play text-white"></i>
+                                                                                </div>
+                                                                            @elseif($destinasi["posisi"] === "tujuan")
+                                                                                <div class="marker-circle bg-danger"
+                                                                                    title="Tujuan Akhir">
+                                                                                    <i
+                                                                                        class="fas fa-flag-checkered text-white"></i>
+                                                                                </div>
+                                                                            @else
+                                                                                <div class="marker-circle bg-info"
+                                                                                    title="Transit">
+                                                                                    <i
+                                                                                        class="fas fa-map-marker-alt text-white"></i>
+                                                                                </div>
+                                                                            @endif
+                                                                            @if (!$loop->last)
+                                                                                <div class="timeline-line"></div>
+                                                                            @endif
+                                                                        </div>
+                                                                        <div class="timeline-content flex-grow-1">
+                                                                            <div class="fw-bold">
+                                                                                {{ $destinasi["urutan"] }}.
+                                                                                {{ $destinasi["nama"] }}
+                                                                            </div>
+                                                                            <small class="text-muted">
+                                                                                @if ($destinasi["posisi"] === "awal")
+                                                                                    <i class="fas fa-info-circle"></i>
+                                                                                    Titik
+                                                                                    awal perjalanan
+                                                                                @elseif($destinasi["posisi"] === "tujuan")
+                                                                                    <i class="fas fa-info-circle"></i>
+                                                                                    Destinasi tujuan akhir
+                                                                                @else
+                                                                                    <i class="fas fa-info-circle"></i>
+                                                                                    Titik
+                                                                                    transit/singgah
+                                                                                @endif
+                                                                            </small>
+                                                                        </div>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        @else
+                                                            <p class="text-muted mb-0">
+                                                                <i class="fas fa-exclamation-circle"></i> Data jalur tidak
+                                                                tersedia
+                                                            </p>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </div>
@@ -439,6 +540,80 @@
         </div>
     </div>
 @endsection
+
+@push("style")
+    <style>
+        /* Styling untuk card rute terpendek */
+        .bg-gradient-light {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        /* Timeline styling */
+        .route-timeline {
+            position: relative;
+        }
+
+        .timeline-item {
+            position: relative;
+        }
+
+        .timeline-marker {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .marker-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 2;
+            position: relative;
+        }
+
+        .timeline-line {
+            width: 3px;
+            flex-grow: 1;
+            background: linear-gradient(to bottom, #dee2e6 0%, #adb5bd 100%);
+            margin: 5px 0;
+            min-height: 30px;
+        }
+
+        .timeline-content {
+            padding-top: 8px;
+        }
+
+        /* Info box styling */
+        .info-box {
+            border-left: 4px solid #007bff;
+        }
+
+        .route-path-box {
+            border-left: 4px solid #28a745;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .marker-circle {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+
+            .timeline-line {
+                min-height: 20px;
+            }
+        }
+    </style>
+@endpush
 
 @push("script")
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -2250,8 +2425,8 @@
         }
 
         /* ==========================================
-                               RUTE ALTERNATIF TABLE STYLING
-                               ========================================== */
+                                   RUTE ALTERNATIF TABLE STYLING
+                                   ========================================== */
         /* Gradient Header untuk Card Rute Alternatif */
         .bg-gradient-primary {
             background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
