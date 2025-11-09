@@ -427,14 +427,21 @@
                     // Tampilkan loading dengan akurasi info
                     $('#currentLocationOption').text('Lokasi Saat Ini (Mencari lokasi yang akurat...)');
 
+                    // Coba dengan high accuracy terlebih dahulu
+                    const timeoutId = setTimeout(function() {
+                        console.log('High accuracy timeout, mencoba dengan low accuracy...');
+                        cobaLowAccuracy();
+                    }, 30000); // Timeout untuk high accuracy setelah 30 detik
+
                     navigator.geolocation.getCurrentPosition(
                         // Callback sukses
                         function(posisi) {
+                            clearTimeout(timeoutId); // Batalkan fallback jika berhasil
                             const lintang = posisi.coords.latitude;
                             const bujur = posisi.coords.longitude;
                             const akurasi = posisi.coords.accuracy;
 
-                            console.log('Koordinat ditemukan:', {
+                            console.log('Koordinat ditemukan (High Accuracy):', {
                                 latitude: lintang,
                                 longitude: bujur,
                                 accuracy: akurasi + ' meter'
@@ -459,18 +466,26 @@
                         },
                         // Callback kesalahan
                         function(kesalahan) {
-                            tanganiErrorLokasi(kesalahan);
+                            clearTimeout(timeoutId);
+                            console.log('High accuracy error:', kesalahan);
+                            // Jika timeout atau error, coba dengan low accuracy
+                            if (kesalahan.code === kesalahan.TIMEOUT || kesalahan.code === kesalahan
+                                .POSITION_UNAVAILABLE) {
+                                cobaLowAccuracy();
+                            } else {
+                                tanganiErrorLokasi(kesalahan);
+                            }
                         },
                         // Opsi untuk akurasi maksimal
                         {
                             enableHighAccuracy: true, // Gunakan GPS jika tersedia
                             maximumAge: 0, // Jangan gunakan cache lokasi
-                            timeout: 15000 // Perpanjang timeout untuk akurasi lebih baik
+                            timeout: 30000 // Timeout 30 detik untuk high accuracy
                         }
                     );
 
-                    // Coba watchPosition untuk mendapatkan lokasi yang lebih akurat
-                    if (navigator.geolocation.watchPosition) {
+                    // Coba watchPosition untuk mendapatkan lokasi yang lebih akurat (opsional)
+                    if (navigator.geolocation.watchPosition && currentLat && currentLng) {
                         let watchId = navigator.geolocation.watchPosition(
                             function(posisi) {
                                 const lintang = posisi.coords.latitude;
@@ -506,9 +521,9 @@
                             function(error) {
                                 console.log('Watch position error:', error);
                             }, {
-                                enableHighAccuracy: true,
-                                maximumAge: 0,
-                                timeout: 10000
+                                enableHighAccuracy: false, // Low accuracy untuk watch
+                                maximumAge: 30000, // Cache 30 detik
+                                timeout: 15000
                             }
                         );
 
@@ -522,24 +537,84 @@
                 }
             }
 
+            // Fungsi fallback untuk mencoba dengan low accuracy
+            function cobaLowAccuracy() {
+                console.log('Mencoba mendapatkan lokasi dengan low accuracy...');
+                $('#currentLocationOption').text('Lokasi Saat Ini (Menggunakan estimasi lokasi...)');
+
+                navigator.geolocation.getCurrentPosition(
+                    function(posisi) {
+                        const lintang = posisi.coords.latitude;
+                        const bujur = posisi.coords.longitude;
+                        const akurasi = posisi.coords.accuracy;
+
+                        console.log('Koordinat ditemukan (Low Accuracy):', {
+                            latitude: lintang,
+                            longitude: bujur,
+                            accuracy: akurasi + ' meter'
+                        });
+
+                        // Simpan koordinat lokasi saat ini
+                        currentLat = lintang;
+                        currentLng = bujur;
+
+                        // Update teks opsi lokasi saat ini
+                        dapatkanNamaLokasi(lintang, bujur, akurasi);
+
+                        // Set sebagai pilihan default jika belum ada yang dipilih
+                        if ($('#lokasiAwal').val() === '') {
+                            $('#lokasiAwal').val('current');
+                            $('#latitude').val(lintang);
+                            $('#longitude').val(bujur);
+                        }
+
+                        // Update marker lokasi saya di peta
+                        tambahkanMarkerLokasiSaya();
+                    },
+                    function(kesalahan) {
+                        console.log('Low accuracy juga gagal:', kesalahan);
+                        tanganiErrorLokasi(kesalahan);
+                    }, {
+                        enableHighAccuracy: false, // Gunakan network-based location
+                        maximumAge: 60000, // Cache hingga 1 menit
+                        timeout: 30000 // Timeout 30 detik untuk low accuracy
+                    }
+                );
+            }
+
             // Menangani kesalahan lokasi
             function tanganiErrorLokasi(kesalahan) {
                 let errorMessage = '';
+                let helpText = '';
+
                 switch (kesalahan.code) {
                     case kesalahan.PERMISSION_DENIED:
                         errorMessage = 'Akses lokasi ditolak';
+                        helpText = 'Izinkan akses lokasi di browser';
                         break;
                     case kesalahan.POSITION_UNAVAILABLE:
                         errorMessage = 'Informasi lokasi tidak tersedia';
+                        helpText = 'Pastikan GPS aktif atau coba lagi';
                         break;
                     case kesalahan.TIMEOUT:
                         errorMessage = 'Waktu permintaan lokasi habis';
+                        helpText = 'Coba refresh atau pilih lokasi manual';
                         break;
                     case kesalahan.UNKNOWN_ERROR:
                         errorMessage = 'Terjadi kesalahan saat mendapatkan lokasi';
+                        helpText = 'Coba lagi atau pilih lokasi manual';
                         break;
                 }
+
                 $('#currentLocationOption').text(`Lokasi Saat Ini (${errorMessage})`);
+
+                // Tampilkan alert dengan solusi
+                console.warn('Geolocation error:', errorMessage, '- Saran:', helpText);
+
+                // Optional: Tampilkan toast notification
+                if (typeof showAlert === 'function') {
+                    showAlert(`${errorMessage}. ${helpText}`, 'warning');
+                }
             }
 
             // Mendapatkan nama lokasi menggunakan reverse geocoding

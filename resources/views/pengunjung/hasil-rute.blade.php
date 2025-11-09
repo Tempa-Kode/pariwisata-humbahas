@@ -314,6 +314,10 @@
                                                 id="btnRute2" data-rute="2">
                                                 <i class="fas fa-route"></i> Rute API MAPS (Langsung)
                                             </button>
+                                            <button class="btn btn-rute-alternatif btn-outline-warning btn-sm"
+                                                id="btnRute3" data-rute="3" style="display: none;">
+                                                <i class="fas fa-route"></i> Rute via Pematang Siantar
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -365,13 +369,18 @@
                                                     style="background-color: #28a745; height: 3px; width: 20px;"></div>
                                                 <small>Jalur Rute 2 (Langsung)</small>
                                             </div>
-                                            @if (isset($hasilRute["semua_rute_alternatif"]) && count($hasilRute["semua_rute_alternatif"]) > 2)
-                                                @foreach (array_slice($hasilRute["semua_rute_alternatif"], 2, 3) as $index => $rute)
+                                            <div class="legend-item mb-2" id="legendRute3" style="display: none;">
+                                                <div class="legend-line me-2"
+                                                    style="background-color: #ffc107; height: 3px; width: 20px;"></div>
+                                                <small>Jalur Rute 3 (Via Pematang Siantar)</small>
+                                            </div>
+                                            @if (isset($hasilRute["semua_rute_alternatif"]) && count($hasilRute["semua_rute_alternatif"]) > 3)
+                                                @foreach (array_slice($hasilRute["semua_rute_alternatif"], 3, 3) as $index => $rute)
                                                     <div class="legend-item mb-2">
                                                         <div class="legend-line me-2"
                                                             style="background-color: {{ $rute["warna_rute"] ?? "#6c757d" }}; height: 3px; width: 20px;">
                                                         </div>
-                                                        <small>Jalur Rute {{ $index + 3 }}
+                                                        <small>Jalur Rute {{ $index + 4 }}
                                                             @if ($rute["jumlah_transit"] === 0)
                                                                 (Langsung)
                                                             @else
@@ -415,6 +424,20 @@
             </div>
         </div>
     </section>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+        <div id="toastNotif" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive"
+            aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toastMessage">
+                    <!-- Pesan akan diisi via JavaScript -->
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push("script")
@@ -426,16 +449,52 @@
         // VARIABEL GLOBAL
         // ==========================================
         let markersDestinasiLain = [];
-        let ruteAktif = 1; // 1 = rute dengan transit, 2 = rute langsung
+        let ruteAktif = 1; // 1 = rute dengan transit, 2 = rute langsung, 3 = rute via Pematang Siantar
         let garisRute1 = null; // Garis untuk rute 1 (transit)
         let garisRute2 = null; // Garis untuk rute 2 (langsung)
+        let garisRute3 = null; // Garis untuk rute 3 (via Pematang Siantar)
         let infoRute1 = null; // Info jarak dan waktu untuk rute 1
         let infoRute2 = null; // Info jarak dan waktu untuk rute 2
+        let infoRute3 = null; // Info jarak dan waktu untuk rute 3
 
         // Data rute alternatif
         let semuaRuteAlternatif = @json($hasilRute["semua_rute_alternatif"] ?? []);
         let garisSemuaRute = {}; // Menyimpan semua garis rute
         let ruteAlternatifAktif = 0; // Index rute alternatif yang sedang aktif
+
+        // ==========================================
+        // FUNGSI TOAST NOTIFICATION
+        // ==========================================
+        function tampilkanToast(pesan, tipe = 'info') {
+            const toastEl = document.getElementById('toastNotif');
+            const toastBody = document.getElementById('toastMessage');
+
+            // Set pesan
+            toastBody.innerHTML = pesan;
+
+            // Set warna berdasarkan tipe
+            toastEl.classList.remove('bg-danger', 'bg-warning', 'bg-success', 'bg-info');
+            switch (tipe) {
+                case 'error':
+                    toastEl.classList.add('bg-danger');
+                    break;
+                case 'warning':
+                    toastEl.classList.add('bg-warning');
+                    break;
+                case 'success':
+                    toastEl.classList.add('bg-success');
+                    break;
+                default:
+                    toastEl.classList.add('bg-info');
+            }
+
+            // Tampilkan toast
+            const toast = new bootstrap.Toast(toastEl, {
+                autohide: true,
+                delay: 5000 // 5 detik
+            });
+            toast.show();
+        }
 
         // ==========================================
         // INISIALISASI DOCUMENT READY
@@ -463,6 +522,10 @@
 
             $('#btnRute2').click(function() {
                 pilihRuteAlternatif(2);
+            });
+
+            $('#btnRute3').click(function() {
+                pilihRuteAlternatif(3);
             });
 
             // Event handler untuk tabel rute alternatif
@@ -592,18 +655,30 @@
                 return;
             }
 
+            if (nomorRute === 3 && !garisRute3) {
+                console.log('Data rute 3 belum tersedia, menunggu...');
+                $('#infoRuteAktif').html('<i class="fas fa-spinner fa-spin text-warning"></i> Memuat rute 3...');
+                setTimeout(() => pilihRuteAlternatif(nomorRute), 500);
+                return;
+            }
+
             ruteAktif = nomorRute;
 
             // Update tombol aktif
             $('#btnRute1').removeClass('active btn-primary').addClass('btn-outline-primary');
             $('#btnRute2').removeClass('active btn-success').addClass('btn-outline-success');
+            $('#btnRute3').removeClass('active btn-warning').addClass('btn-outline-warning');
 
             if (nomorRute === 1) {
                 $('#btnRute1').addClass('active btn-primary').removeClass('btn-outline-primary');
                 $('#infoRuteAktif').html('<i class="fas fa-route text-primary"></i> Rute 1 (Transit) sedang aktif');
-            } else {
+            } else if (nomorRute === 2) {
                 $('#btnRute2').addClass('active btn-success').removeClass('btn-outline-success');
                 $('#infoRuteAktif').html('<i class="fas fa-route text-success"></i> Rute 2 (Langsung) sedang aktif');
+            } else if (nomorRute === 3) {
+                $('#btnRute3').addClass('active btn-warning').removeClass('btn-outline-warning');
+                $('#infoRuteAktif').html(
+                    '<i class="fas fa-route text-warning"></i> Rute 3 (Via Pematang Siantar) sedang aktif');
             }
 
             // Tampilkan/sembunyikan garis rute
@@ -626,6 +701,9 @@
             if (garisRute2 && peta.hasLayer(garisRute2)) {
                 peta.removeLayer(garisRute2);
             }
+            if (garisRute3 && peta.hasLayer(garisRute3)) {
+                peta.removeLayer(garisRute3);
+            }
 
             // Tampilkan rute yang aktif
             if (ruteAktif === 1 && garisRute1) {
@@ -642,6 +720,8 @@
                 }
             } else if (ruteAktif === 2 && garisRute2) {
                 garisRute2.addTo(peta);
+            } else if (ruteAktif === 3 && garisRute3) {
+                garisRute3.addTo(peta);
             }
         }
 
@@ -736,6 +816,67 @@
                 }
 
                 console.log('Data rute 2 selesai diproses');
+            } else if (ruteAktif === 3) {
+                // Rute 3 (Via Pematang Siantar) - gunakan data dari API jika tersedia, fallback ke database
+                console.log('Mencoba menampilkan data rute 3 dari API...');
+                console.log('infoRute3 data:', infoRute3);
+
+                let jarakUpdated = false;
+                let waktuUpdated = false;
+
+                // Update JARAK untuk rute 3
+                if (infoRute3 && infoRute3.jarak && infoRute3.jarak !== 0) {
+                    let jarakFormatted;
+                    if (typeof infoRute3.jarak === 'number') {
+                        jarakFormatted = `${number_format(infoRute3.jarak, 2)} km`;
+                    } else if (typeof infoRute3.jarak === 'string') {
+                        jarakFormatted = infoRute3.jarak;
+                    }
+
+                    if (jarakFormatted) {
+                        jarakElement.text(jarakFormatted);
+                        jarakUpdated = true;
+                        console.log('Jarak rute 3 diupdate dari API:', jarakFormatted);
+                    }
+                }
+
+                // Update WAKTU untuk rute 3
+                if (infoRute3 && infoRute3.waktu && infoRute3.waktu !== 'Menghitung...' && infoRute3.waktu !== 0) {
+                    let waktuFormatted;
+
+                    if (typeof infoRute3.waktu === 'string') {
+                        // Format string asli dari API
+                        waktuFormatted = infoRute3.waktu;
+                    } else if (typeof infoRute3.waktu === 'number') {
+                        // Konversi dari menit ke format readable
+                        if (infoRute3.waktu >= 60) {
+                            const jam = Math.floor(infoRute3.waktu / 60);
+                            const sisaMenit = Math.round(infoRute3.waktu % 60);
+                            waktuFormatted = sisaMenit > 0 ? `${jam} jam ${sisaMenit} menit` : `${jam} jam`;
+                        } else {
+                            waktuFormatted = `${Math.round(infoRute3.waktu)} menit`;
+                        }
+                    }
+
+                    if (waktuFormatted) {
+                        waktuElement.text(waktuFormatted);
+                        waktuUpdated = true;
+                        console.log('Waktu rute 3 diupdate dari API:', waktuFormatted);
+                    }
+                }
+
+                // Fallback ke data database jika API tidak memberikan data
+                if (!jarakUpdated) {
+                    jarakElement.text(dataAsliJarak);
+                    console.log('Jarak rute 3 fallback ke database:', dataAsliJarak);
+                }
+
+                if (!waktuUpdated) {
+                    waktuElement.text(dataAsliWaktu);
+                    console.log('Waktu rute 3 fallback ke database:', dataAsliWaktu);
+                }
+
+                console.log('Data rute 3 selesai diproses');
             }
 
             // Log hasil akhir yang ditampilkan
@@ -951,7 +1092,7 @@
 
             console.log(
                 `Menggambar rute alternatif ${ruteIndex + 1} di peta dengan ${koordinatRute.length} titik mengikuti jalan`
-                );
+            );
 
             const garisRute = [];
             let segmenSelesai = 0;
@@ -1005,7 +1146,7 @@
                             // Fallback: gunakan garis lurus jika API gagal
                             console.warn(
                                 `Gagal mendapatkan rute jalan untuk segmen ${i + 1}, menggunakan garis lurus`
-                                );
+                            );
                             const koordinatGaris = [
                                 [asal.lat, asal.lng],
                                 [tujuan.lat, tujuan.lng]
@@ -1041,7 +1182,7 @@
 
                             markerTransit.bindPopup(
                                 `<b>Transit: ${asal.nama}</b><br><small>Rute Alternatif ${ruteIndex + 1}</small>`
-                                );
+                            );
                             garisRute.push(markerTransit);
                         }
 
@@ -1072,10 +1213,10 @@
                         });
 
                         garis.bindTooltip(
-                        `Rute ${ruteIndex + 1}: ${asal.nama} → ${tujuan.nama} (garis lurus)`, {
-                            permanent: false,
-                            sticky: true
-                        });
+                            `Rute ${ruteIndex + 1}: ${asal.nama} → ${tujuan.nama} (garis lurus)`, {
+                                permanent: false,
+                                sticky: true
+                            });
 
                         garisRute.push(garis);
 
@@ -1092,7 +1233,7 @@
 
                             markerTransit.bindPopup(
                                 `<b>Transit: ${asal.nama}</b><br><small>Rute Alternatif ${ruteIndex + 1}</small>`
-                                );
+                            );
                             garisRute.push(markerTransit);
                         }
 
@@ -1101,7 +1242,7 @@
                             garisSemuaRute[ruteIndex] = garisRute;
                             console.log(
                                 `Rute alternatif ${ruteIndex + 1} berhasil digambar di peta (dengan fallback)`
-                                );
+                            );
                         }
                     }
                 });
@@ -1491,7 +1632,119 @@
                     peta.removeLayer(garis);
                 }
                 console.log('Rute 2 (Langsung) selesai dibuat');
-            }); // Sesuaikan viewport untuk menampilkan seluruh rute
+            });
+
+            // ==========================================
+            // RUTE 3: Via Pematang Siantar
+            // ==========================================
+            console.log('Membuat Rute 3 (Via Pematang Siantar)...');
+
+            // Koordinat Pematang Siantar
+            const pematangSiantar = {
+                lat: 2.9676002181287195,
+                lng: 99.06843670021658,
+                nama: 'Pematang Siantar'
+            };
+
+            // Cari rute yang via Pematang Siantar dari data rute alternatif
+            const ruteViaPematang = semuaRuteAlternatif.find(rute => rute.via_pematang_siantar === true);
+
+            if (ruteViaPematang) {
+                console.log('Data rute via Pematang Siantar ditemukan:', ruteViaPematang);
+
+                // Tampilkan tombol rute 3 dan legend
+                $('#btnRute3').show();
+                $('#legendRute3').show();
+
+                // Gambar rute dari lokasi awal ke Pematang Siantar
+                console.log('🟡 SEGMEN 1: Lokasi Awal → Pematang Siantar');
+                console.log('   Dari:', lokasiAwal);
+                console.log('   Ke:', pematangSiantar);
+
+                dapatkanDanGambarRuteJalan(peta, lokasiAwal, pematangSiantar, '#ffc107', 'Jalur ke Pematang Siantar',
+                    function(garis1, info1) {
+                        console.log('✅ SEGMEN 1 SELESAI:', info1);
+
+                        // Gambar rute dari Pematang Siantar ke tujuan
+                        console.log('🟡 SEGMEN 2: Pematang Siantar → Tujuan');
+                        console.log('   Dari:', pematangSiantar);
+                        console.log('   Ke:', wisataTujuan);
+
+                        dapatkanDanGambarRuteJalan(peta, pematangSiantar, wisataTujuan, '#ffc107',
+                            'Jalur dari Pematang Siantar ke tujuan',
+                            function(garis2, info2) {
+                                console.log('✅ SEGMEN 2 SELESAI:', info2);
+                                // Buat layer group untuk rute 3
+                                garisRute3 = L.layerGroup([garis1, garis2]);
+
+                                // Tambahkan marker untuk Pematang Siantar
+                                const markerPematang = L.marker([pematangSiantar.lat, pematangSiantar.lng], {
+                                    icon: L.divIcon({
+                                        className: 'marker-transit',
+                                        html: '<div style="background-color: #ffc107; color: black; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"><i class="bi bi-geo-fill"></i></div>',
+                                        iconSize: [20, 20],
+                                        iconAnchor: [10, 10]
+                                    })
+                                }).addTo(peta).bindPopup('<b>Transit: Pematang Siantar</b>');
+
+                                // Tambahkan marker ke layer group
+                                garisRute3.addLayer(markerPematang);
+
+                                // Hitung total jarak dan waktu
+                                let totalJarak = 0;
+                                let totalWaktu = 0;
+
+                                if (info1 && info1.jarak) {
+                                    totalJarak += typeof info1.jarak === 'number' ? info1.jarak : parseFloat(info1
+                                        .jarak);
+                                }
+                                if (info2 && info2.jarak) {
+                                    totalJarak += typeof info2.jarak === 'number' ? info2.jarak : parseFloat(info2
+                                        .jarak);
+                                }
+
+                                if (info1 && info1.durasi) {
+                                    totalWaktu += typeof info1.durasi === 'number' ? info1.durasi : parseFloat(info1
+                                        .durasi);
+                                }
+                                if (info2 && info2.durasi) {
+                                    totalWaktu += typeof info2.durasi === 'number' ? info2.durasi : parseFloat(info2
+                                        .durasi);
+                                }
+
+                                // Format waktu
+                                let waktuFormatted;
+                                if (totalWaktu >= 60) {
+                                    const jam = Math.floor(totalWaktu / 60);
+                                    const sisaMenit = Math.round(totalWaktu % 60);
+                                    waktuFormatted = sisaMenit > 0 ? `${jam} jam ${sisaMenit} menit` : `${jam} jam`;
+                                } else {
+                                    waktuFormatted = `${Math.round(totalWaktu)} menit`;
+                                }
+
+                                // Simpan info untuk rute 3
+                                infoRute3 = {
+                                    jarak: totalJarak,
+                                    waktu: waktuFormatted
+                                };
+
+                                console.log('infoRute3 final:', infoRute3);
+                                console.log('Rute 3 (Via Pematang Siantar) selesai dibuat');
+
+                                // Sembunyikan rute 3 secara default
+                                if (ruteAktif !== 3) {
+                                    peta.removeLayer(garisRute3);
+                                }
+                            }
+                        );
+                    }
+                );
+            } else {
+                console.log('Tidak ada rute via Pematang Siantar dalam data');
+                $('#btnRute3').hide();
+            }
+
+            // Sesuaikan viewport untuk menampilkan seluruh rute
             sesuaikanViewportPeta(peta, lokasiAwal, wisataAwal, wisataTujuan, koordinatRute);
         }
 
@@ -1533,7 +1786,26 @@
             }
         }
 
-        function dapatkanDanGambarRuteJalan(peta, koordinatAsal, koordinatTujuan, warna, keterangan, callback = null) {
+        function dapatkanDanGambarRuteJalan(peta, koordinatAsal, koordinatTujuan, warna, keterangan, callback = null,
+            retryCount = 0) {
+            // Log request untuk debugging
+            console.log('🔄 Request rute jalan (attempt ' + (retryCount + 1) + '):', {
+                dari: koordinatAsal,
+                ke: koordinatTujuan,
+                warna: warna,
+                keterangan: keterangan
+            });
+
+            // Hitung jarak estimasi untuk menentukan timeout
+            const jarakEstimasi = hitungJarakHaversine(
+                koordinatAsal.lat, koordinatAsal.lng,
+                koordinatTujuan.lat, koordinatTujuan.lng
+            );
+
+            // Timeout dinamis: 15 detik untuk jarak < 50km, 20 detik untuk >= 50km
+            const timeoutDuration = jarakEstimasi < 50 ? 15000 : 20000;
+            console.log(`   Jarak estimasi: ${jarakEstimasi.toFixed(2)} km, Timeout: ${timeoutDuration/1000}s`);
+
             // Panggil API untuk mendapatkan rute jalan sebenarnya
             $.ajax({
                 url: '{{ route("api.rute-jalan") }}',
@@ -1543,8 +1815,14 @@
                     koordinat_awal: koordinatAsal,
                     koordinat_tujuan: koordinatTujuan
                 },
+                timeout: timeoutDuration,
                 success: function(response) {
-                    if (response.success && response.koordinat_rute) {
+                    console.log('✅ Response rute jalan berhasil:', response);
+
+                    if (response.success && response.koordinat_rute && response.koordinat_rute.length > 0) {
+                        console.log(
+                            `✅ Menggambar rute mengikuti jalan (${response.koordinat_rute.length} titik)`);
+
                         // Gambar garis mengikuti jalan sebenarnya
                         const garis = L.polyline(response.koordinat_rute, {
                             color: warna,
@@ -1552,6 +1830,16 @@
                             opacity: 0.8,
                             smoothFactor: 1
                         }).addTo(peta);
+
+                        // Jika backend mengirim fallback, tampilkan warning
+                        if (response.fallback === true) {
+                            tampilkanToast(
+                                '<i class="fas fa-info-circle me-2"></i>' +
+                                '<strong>Info Rute</strong><br>' +
+                                'Rute ditampilkan sebagai perkiraan (garis lurus).',
+                                'warning'
+                            );
+                        }
 
                         // Tambahkan tooltip dengan informasi jarak dan durasi
                         let tooltipText = keterangan;
@@ -1578,27 +1866,111 @@
                                 fallback: response.fallback
                             });
                         }
+                    } else {
+                        // Response tidak valid, gunakan garis lurus
+                        console.warn('⚠️ Response tidak valid, menggunakan garis lurus:', response);
+                        gambarGarisLurusFallback(peta, koordinatAsal, koordinatTujuan, warna, keterangan,
+                            callback);
                     }
                 },
-                error: function() {
-                    // Fallback: gambar garis lurus jika API gagal
-                    console.warn('Gagal mendapatkan rute jalan, menggunakan garis lurus');
-                    const ruteLangsung = [
-                        [koordinatAsal.lat, koordinatAsal.lng],
-                        [koordinatTujuan.lat, koordinatTujuan.lng]
-                    ];
-                    const garis = gambarGarisRute(peta, ruteLangsung, warna, keterangan + ' (garis lurus)');
+                error: function(xhr, status, error) {
+                    // Log error detail
+                    console.error('❌ AJAX Error (attempt ' + (retryCount + 1) + '):', {
+                        status: status,
+                        error: error,
+                        response: xhr.responseText,
+                        statusCode: xhr.status
+                    });
 
-                    // Panggil callback dengan info fallback
-                    if (callback) {
-                        callback(garis, {
-                            jarak: null,
-                            durasi: null,
-                            fallback: true
-                        });
+                    // Retry logic: coba lagi jika timeout atau network error (max 2 kali retry)
+                    if ((status === 'timeout' || xhr.status === 0) && retryCount < 2) {
+                        console.warn('⚠️ Mencoba ulang request (' + (retryCount + 2) + '/3)...');
+
+                        // Tunggu 1 detik sebelum retry
+                        setTimeout(function() {
+                            dapatkanDanGambarRuteJalan(peta, koordinatAsal, koordinatTujuan, warna,
+                                keterangan, callback, retryCount + 1);
+                        }, 1000);
+                        return;
                     }
+
+                    // Tampilkan notifikasi ke user
+                    if (xhr.status === 0) {
+                        console.error(
+                            '❌ Network Error: Tidak bisa terhubung ke server. Periksa koneksi internet.');
+                    } else if (xhr.status === 500) {
+                        console.error('❌ Server Error: API routing mengalami masalah.');
+                    } else if (status === 'timeout') {
+                        console.error('❌ Timeout: Request memakan waktu terlalu lama setelah ' + (retryCount +
+                            1) + ' percobaan.');
+                    }
+
+                    // Fallback: gambar garis lurus
+                    console.warn('⚠️ Menggunakan garis lurus sebagai fallback');
+                    gambarGarisLurusFallback(peta, koordinatAsal, koordinatTujuan, warna, keterangan, callback);
                 }
             });
+        }
+
+        // Fungsi helper untuk menggambar garis lurus sebagai fallback
+        function gambarGarisLurusFallback(peta, koordinatAsal, koordinatTujuan, warna, keterangan, callback) {
+            console.log('📏 Menggambar garis lurus fallback');
+
+            // Tampilkan peringatan ke user
+            tampilkanToast(
+                '<i class="fas fa-exclamation-triangle me-2"></i>' +
+                '<strong>Rute Tidak Tersedia</strong><br>' +
+                'Menampilkan garis lurus estimasi. Rute jalan sebenarnya sedang tidak tersedia.',
+                'warning'
+            );
+
+            const ruteLangsung = [
+                [koordinatAsal.lat, koordinatAsal.lng],
+                [koordinatTujuan.lat, koordinatTujuan.lng]
+            ];
+
+            // Gambar dengan dash pattern untuk menunjukkan ini bukan rute sebenarnya
+            const garis = L.polyline(ruteLangsung, {
+                color: warna,
+                weight: 4,
+                opacity: 0.6,
+                smoothFactor: 1,
+                dashArray: '10, 10' // Garis putus-putus
+            }).addTo(peta);
+
+            // Tooltip warning
+            garis.bindTooltip(keterangan +
+                '<br><small class="text-danger">⚠️ Garis lurus (estimasi)<br>Rute jalan sebenarnya tidak tersedia</small>', {
+                    permanent: false,
+                    sticky: true
+                });
+
+            // Hitung jarak lurus menggunakan Haversine
+            const jarakLurus = hitungJarakHaversine(
+                koordinatAsal.lat, koordinatAsal.lng,
+                koordinatTujuan.lat, koordinatTujuan.lng
+            );
+
+            // Panggil callback dengan estimasi
+            if (callback) {
+                callback(garis, {
+                    jarak: jarakLurus,
+                    durasi: Math.round(jarakLurus / 40 * 60), // Estimasi 40 km/jam
+                    fallback: true
+                });
+            }
+        }
+
+        // Fungsi untuk menghitung jarak Haversine
+        function hitungJarakHaversine(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius bumi dalam km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
         }
 
         function sesuaikanViewportPeta(peta, lokasiAwal, wisataAwal, wisataTujuan, koordinatRute) {
@@ -1878,8 +2250,8 @@
         }
 
         /* ==========================================
-                   RUTE ALTERNATIF TABLE STYLING
-                   ========================================== */
+                               RUTE ALTERNATIF TABLE STYLING
+                               ========================================== */
         /* Gradient Header untuk Card Rute Alternatif */
         .bg-gradient-primary {
             background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;

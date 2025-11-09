@@ -556,7 +556,21 @@ class Dijkstra extends Controller
         $koordinatAwal = $request->koordinat_awal;
         $koordinatTujuan = $request->koordinat_tujuan;
 
+        Log::info('📍 Request rute jalan:', [
+            'dari' => $koordinatAwal,
+            'ke' => $koordinatTujuan
+        ]);
+
         try {
+            // Validasi koordinat
+            if (!isset($koordinatAwal['lat'], $koordinatAwal['lng'], $koordinatTujuan['lat'], $koordinatTujuan['lng'])) {
+                Log::error('❌ Koordinat tidak valid');
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Koordinat tidak valid'
+                ], 400);
+            }
+
             // Menggunakan OSRM (Open Source Routing Machine) untuk mendapatkan rute jalan sebenarnya
             $urlOSRM = "http://router.project-osrm.org/route/v1/driving/"
                      . $koordinatAwal['lng'] . "," . $koordinatAwal['lat'] . ";"
@@ -568,24 +582,44 @@ class Dijkstra extends Controller
             if ($responOSRM && isset($responOSRM['routes'][0]['geometry']['coordinates'])) {
                 $koordinatJalan = $responOSRM['routes'][0]['geometry']['coordinates'];
 
+                Log::info('✅ Rute OSRM berhasil didapat: ' . count($koordinatJalan) . ' titik koordinat');
+
                 // Konversi format dari [lng, lat] ke [lat, lng] untuk Leaflet
                 $koordinatRute = array_map(function($coord) {
                     return [$coord[1], $coord[0]]; // [lat, lng]
                 }, $koordinatJalan);
 
+                $jarak = round($responOSRM['routes'][0]['distance'] / 1000, 2);
+                $durasi = round($responOSRM['routes'][0]['duration'] / 60, 0);
+
+                Log::info("✅ Mengembalikan rute: Jarak = {$jarak} km, Durasi = {$durasi} menit");
+
                 return response()->json([
                     'success' => true,
                     'koordinat_rute' => $koordinatRute,
-                    'jarak' => round($responOSRM['routes'][0]['distance'] / 1000, 2), // km
-                    'durasi' => round($responOSRM['routes'][0]['duration'] / 60, 0) // menit
+                    'jarak' => $jarak, // km
+                    'durasi' => $durasi, // menit
+                    'fallback' => false,
+                    'provider' => 'OSRM'
                 ]);
             }
 
-            // Fallback: jika OSRM gagal, gunakan garis lurus
+            // Coba alternatif provider: GraphHopper API (public server)
+            Log::warning('⚠️ OSRM gagal, mencoba GraphHopper API...');
+            $responGraphHopper = $this->panggilGraphHopperAPI($koordinatAwal, $koordinatTujuan);
+
+            if ($responGraphHopper !== null) {
+                return $responGraphHopper;
+            }
+
+            // Fallback terakhir: jika semua API gagal, gunakan garis lurus
+            Log::warning('⚠️ Semua API routing gagal, menggunakan fallback garis lurus');
             return $this->buatGarisLurusFallback($koordinatAwal, $koordinatTujuan);
 
         } catch (\Exception $e) {
             // Fallback: jika ada error, gunakan garis lurus
+            Log::error('❌ Exception pada dapatkanRuteJalanSebenarnya: ' . $e->getMessage());
+            Log::error('   Stack: ' . $e->getTraceAsString());
             return $this->buatGarisLurusFallback($koordinatAwal, $koordinatTujuan);
         }
     }
@@ -674,6 +708,15 @@ class Dijkstra extends Controller
                 Log::info('Rute langsung ditambahkan: ' . implode(' -> ', $ruteLangsung['jalur']));
             } else {
                 Log::info('Rute langsung sudah ada, tidak ditambahkan');
+            }
+
+            // Tambahkan rute via Pematang Siantar sebagai alternatif
+            $ruteViaPematangSiantar = $this->buatRuteViaPematangSiantar($wisataAwal, $wisataTujuan, count($ruteAlternatif) + 1, $jarakKeWisataAwal);
+            if ($ruteViaPematangSiantar && !$this->ruteUdahAda($ruteViaPematangSiantar['jalur'], $ruteAlternatif)) {
+                $ruteAlternatif[] = $ruteViaPematangSiantar;
+                Log::info('Rute via Pematang Siantar ditambahkan: ' . implode(' -> ', $ruteViaPematangSiantar['jalur']));
+            } else {
+                Log::info('Rute via Pematang Siantar tidak ditambahkan (sudah ada atau tidak valid)');
             }
 
             Log::info('Total rute alternatif yang ditemukan: ' . count($ruteAlternatif));
@@ -885,6 +928,90 @@ class Dijkstra extends Controller
     }
 
     /**
+     * Buat rute via Pematang Siantar sebagai waypoint
+     */
+    private function buatRuteViaPematangSiantar($wisataAwal, $wisataTujuan, $nomorRute, $jarakKeWisataAwal = 0)
+    {
+        // Koordinat Pematang Siantar sebagai waypoint
+        $pematangSiantarLat = 2.9676002181287195;
+        $pematangSiantarLng = 99.06843670021658;
+
+        // Hitung jarak dari wisata awal ke Pematang Siantar
+        $jarakKeWaypoint = $this->hitungJarakJalanSebenarnya(
+            $wisataAwal->latitude, $wisataAwal->longitude,
+            $pematangSiantarLat, $pematangSiantarLng
+        );
+
+        if ($jarakKeWaypoint === null) {
+            $jarakKeWaypoint = $this->hitungJarakHaversine(
+                $wisataAwal->latitude, $wisataAwal->longitude,
+                $pematangSiantarLat, $pematangSiantarLng
+            );
+        }
+
+        // Hitung jarak dari Pematang Siantar ke tujuan
+        $jarakDariWaypoint = $this->hitungJarakJalanSebenarnya(
+            $pematangSiantarLat, $pematangSiantarLng,
+            $wisataTujuan->latitude, $wisataTujuan->longitude
+        );
+
+        if ($jarakDariWaypoint === null) {
+            $jarakDariWaypoint = $this->hitungJarakHaversine(
+                $pematangSiantarLat, $pematangSiantarLng,
+                $wisataTujuan->latitude, $wisataTujuan->longitude
+            );
+        }
+
+        // Total jarak termasuk jarak dari lokasi pengguna ke wisata awal
+        $totalJarakViaPematang = $jarakKeWaypoint + $jarakDariWaypoint + $jarakKeWisataAwal;
+
+        return [
+            'nomor_rute' => $nomorRute,
+            'jalur' => [$wisataAwal->id_wisata, 'pematang_siantar', $wisataTujuan->id_wisata],
+            'jarak_rute' => $totalJarakViaPematang,
+            'waktu_rute' => $this->estimasiWaktuTempuh($totalJarakViaPematang),
+            'jumlah_transit' => 1,
+            'wisata_transit' => [
+                [
+                    'id' => 'pematang_siantar',
+                    'nama' => 'Pematang Siantar',
+                    'latitude' => $pematangSiantarLat,
+                    'longitude' => $pematangSiantarLng
+                ]
+            ],
+            'semua_destinasi_dilalui' => [
+                [
+                    'id' => $wisataAwal->id_wisata,
+                    'nama' => $wisataAwal->nama_wisata,
+                    'latitude' => $wisataAwal->latitude,
+                    'longitude' => $wisataAwal->longitude,
+                    'posisi' => 'awal',
+                    'urutan' => 1
+                ],
+                [
+                    'id' => 'pematang_siantar',
+                    'nama' => 'Pematang Siantar',
+                    'latitude' => $pematangSiantarLat,
+                    'longitude' => $pematangSiantarLng,
+                    'posisi' => 'transit',
+                    'urutan' => 2
+                ],
+                [
+                    'id' => $wisataTujuan->id_wisata,
+                    'nama' => $wisataTujuan->nama_wisata,
+                    'latitude' => $wisataTujuan->latitude,
+                    'longitude' => $wisataTujuan->longitude,
+                    'posisi' => 'tujuan',
+                    'urutan' => 3
+                ]
+            ],
+            'tingkat_kemudahan' => 'Sedang',
+            'warna_rute' => $this->tentukanWarnaRute($nomorRute),
+            'via_pematang_siantar' => true // Flag khusus untuk route ini
+        ];
+    }
+
+    /**
      * Tentukan tingkat kemudahan berdasarkan transit dan jarak
      */
     private function tentukanTingkatKemudahan($jumlahTransit, $jarak)
@@ -917,30 +1044,133 @@ class Dijkstra extends Controller
     private function panggilAPIRouting($url)
     {
         try {
+            // Tambahkan logging untuk debugging
+            Log::info('🔄 Memanggil OSRM API: ' . $url);
+
             $konteks = stream_context_create([
                 'http' => [
-                    'timeout' => 3, // Reduced dari 10 ke 3 detik
+                    'timeout' => 15, // Naikkan timeout menjadi 15 detik untuk rute panjang
                     'user_agent' => 'Pariwisata Humbang Hasundutan/1.0',
-                    'ignore_errors' => true
+                    'ignore_errors' => true,
+                    'method' => 'GET',
+                    'header' => "Accept: application/json\r\n"
                 ]
             ]);
 
+            $waktuMulai = microtime(true);
             $responJSON = @file_get_contents($url, false, $konteks);
+            $waktuSelesai = microtime(true);
+            $durasi = round(($waktuSelesai - $waktuMulai) * 1000); // dalam milliseconds
 
             if ($responJSON === false) {
+                // Dapatkan error detail
+                $error = error_get_last();
+                Log::error('❌ OSRM API gagal: ' . ($error['message'] ?? 'Unknown error'));
+                Log::error('   URL: ' . $url);
+                Log::error('   Durasi: ' . $durasi . 'ms');
                 return null;
             }
 
-            return json_decode($responJSON, true);
+            Log::info('✅ OSRM API berhasil (dalam ' . $durasi . 'ms)');
+
+            $data = json_decode($responJSON, true);
+
+            if ($data === null) {
+                Log::error('❌ JSON decode gagal. Response: ' . substr($responJSON, 0, 200));
+                return null;
+            }
+
+            if (isset($data['code']) && $data['code'] !== 'Ok') {
+                Log::warning('⚠️ OSRM mengembalikan error code: ' . ($data['code'] ?? 'unknown'));
+                Log::warning('   Message: ' . ($data['message'] ?? 'no message'));
+            }
+
+            return $data;
 
         } catch (\Exception $e) {
-            Log::warning("API Routing error: " . $e->getMessage());
+            Log::error("❌ Exception pada API Routing: " . $e->getMessage());
+            Log::error("   Stack trace: " . $e->getTraceAsString());
+            return null;
+        }
+    }
+
+    /**
+     * Panggil GraphHopper API sebagai alternatif OSRM
+     */
+    private function panggilGraphHopperAPI($koordinatAwal, $koordinatTujuan)
+    {
+        try {
+            // GraphHopper public server (free, no API key needed)
+            $url = "https://graphhopper.com/api/1/route"
+                 . "?point=" . $koordinatAwal['lat'] . "," . $koordinatAwal['lng']
+                 . "&point=" . $koordinatTujuan['lat'] . "," . $koordinatTujuan['lng']
+                 . "&vehicle=car"
+                 . "&locale=id"
+                 . "&points_encoded=false"
+                 . "&type=json";
+
+            Log::info('🔄 Memanggil GraphHopper API: ' . $url);
+
+            $konteks = stream_context_create([
+                'http' => [
+                    'timeout' => 15,
+                    'user_agent' => 'Pariwisata Humbang Hasundutan/1.0',
+                    'ignore_errors' => true,
+                    'method' => 'GET',
+                    'header' => "Accept: application/json\r\n"
+                ]
+            ]);
+
+            $waktuMulai = microtime(true);
+            $responJSON = @file_get_contents($url, false, $konteks);
+            $waktuSelesai = microtime(true);
+            $durasi = round(($waktuSelesai - $waktuMulai) * 1000);
+
+            if ($responJSON === false) {
+                Log::error('❌ GraphHopper API gagal');
+                return null;
+            }
+
+            $data = json_decode($responJSON, true);
+
+            if ($data && isset($data['paths'][0]['points']['coordinates'])) {
+                $koordinatJalan = $data['paths'][0]['points']['coordinates'];
+
+                Log::info('✅ Rute GraphHopper berhasil didapat: ' . count($koordinatJalan) . ' titik koordinat');
+
+                // Konversi format dari [lng, lat] ke [lat, lng] untuk Leaflet
+                $koordinatRute = array_map(function($coord) {
+                    return [$coord[1], $coord[0]]; // [lat, lng]
+                }, $koordinatJalan);
+
+                $jarak = round($data['paths'][0]['distance'] / 1000, 2);
+                $durasi = round($data['paths'][0]['time'] / 60000, 0);
+
+                Log::info("✅ Mengembalikan rute GraphHopper: Jarak = {$jarak} km, Durasi = {$durasi} menit");
+
+                return response()->json([
+                    'success' => true,
+                    'koordinat_rute' => $koordinatRute,
+                    'jarak' => $jarak,
+                    'durasi' => $durasi,
+                    'fallback' => false,
+                    'provider' => 'GraphHopper'
+                ]);
+            }
+
+            Log::warning('⚠️ GraphHopper tidak mengembalikan data rute');
+            return null;
+
+        } catch (\Exception $e) {
+            Log::error("❌ Exception pada GraphHopper API: " . $e->getMessage());
             return null;
         }
     }
 
     private function buatGarisLurusFallback($koordinatAwal, $koordinatTujuan)
     {
+        Log::warning('📏 Menggunakan garis lurus sebagai fallback');
+
         $koordinatRute = [
             [$koordinatAwal['lat'], $koordinatAwal['lng']],
             [$koordinatTujuan['lat'], $koordinatTujuan['lng']]
@@ -951,12 +1181,15 @@ class Dijkstra extends Controller
             $koordinatTujuan['lat'], $koordinatTujuan['lng']
         );
 
+        Log::info("📏 Fallback: Jarak lurus = {$jarak} km");
+
         return response()->json([
             'success' => true,
             'koordinat_rute' => $koordinatRute,
             'jarak' => round($jarak, 2),
             'durasi' => round($jarak / 40 * 60, 0), // estimasi dengan kecepatan 40 km/jam
-            'fallback' => true
+            'fallback' => true,
+            'warning' => 'Menggunakan garis lurus (estimasi). Rute jalan sebenarnya tidak tersedia.'
         ]);
     }
 }
