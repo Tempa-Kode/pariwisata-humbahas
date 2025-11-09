@@ -9,9 +9,10 @@ use App\Models\Rute;
 
 class Dijkstra extends Controller
 {
-    public function halamanCariRute() {
+    public function halamanCariRute(Request $request) {
         $wisata = Wisata::all();
-        return view('pengunjung.cari-rute', compact('wisata'));
+        $tujuanId = $request->query('tujuan'); // Ambil parameter tujuan dari URL
+        return view('pengunjung.cari-rute', compact('wisata', 'tujuanId'));
     }
 
     public function cariRuteTerpendek(Request $request)

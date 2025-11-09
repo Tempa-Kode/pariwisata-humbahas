@@ -118,7 +118,8 @@
                                             <option value="" hidden="">Pilih Lokasi Tujuan</option>
                                             @forelse($wisata as $item)
                                                 <option value="{{ $item->id_wisata }}" data-lat="{{ $item->latitude }}"
-                                                    data-lng="{{ $item->longitude }}" class="wisata-option">
+                                                    data-lng="{{ $item->longitude }}" class="wisata-option"
+                                                    {{ isset($tujuanId) && $tujuanId == $item->id_wisata ? "selected" : "" }}>
                                                     {{ $item->nama_wisata }}
                                                 </option>
                                             @empty
