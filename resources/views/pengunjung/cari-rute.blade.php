@@ -39,9 +39,9 @@
                                                     <option value="" hidden="">Pilih Lokasi Awal</option>
                                                     <option value="current" id="currentLocationOption">Lokasi Saat Ini
                                                         (Mendapatkan lokasi...)</option>
-                                                    <option value="dolok_sanggul" data-lat="2.252977" data-lng="98.748272">
+                                                    {{-- <option value="dolok_sanggul" data-lat="2.252977" data-lng="98.748272">
                                                         Pusat
-                                                        Dolok Sanggul</option>
+                                                        Dolok Sanggul</option> --}}
                                                     @forelse($wisata as $item)
                                                         <option value="{{ $item->id_wisata }}"
                                                             data-lat="{{ $item->latitude }}"
