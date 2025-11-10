@@ -78,14 +78,14 @@
                                                             <th width="15%">
                                                                 <i class="fas fa-clock text-warning"></i> Waktu
                                                             </th>
-                                                            <th width="25%">
+                                                            {{-- <th width="25%">
                                                                 <i class="fas fa-route text-secondary"></i> Destinasi yang
                                                                 Dilalui
-                                                            </th>
+                                                            </th> --}}
                                                             {{-- <th width="10%">
                                                                 <i class="fas fa-star text-warning"></i> Tingkat
                                                             </th> --}}
-                                                            <th width="10%" class="text-center">Aksi</th>
+                                                            {{-- <th width="10%" class="text-center">Aksi</th> --}}
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -113,10 +113,10 @@
                                                                     @endif
                                                                 </td>
                                                                 <td>
-                                                                    <strong
-                                                                        class="text-warning">{{ $rute["waktu_rute"] }} 🚗/🏍️</strong>
+                                                                    <strong class="text-warning">{{ $rute["waktu_rute"] }}
+                                                                        🚗/🏍️</strong>
                                                                 </td>
-                                                                <td>
+                                                                {{-- <td>
                                                                     @if (!empty($rute["semua_destinasi_dilalui"]))
                                                                         <div class="destinasi-list">
                                                                             @foreach ($rute["semua_destinasi_dilalui"] as $destinasi)
@@ -161,7 +161,7 @@
                                                                         <small class="text-muted">Tidak ada data
                                                                             rute</small>
                                                                     @endif
-                                                                </td>
+                                                                </td> --}}
                                                                 {{-- <td>
                                                                     @php
                                                                         $tingkat =
@@ -184,14 +184,14 @@
                                                                         {{ $tingkat }}
                                                                     </span>
                                                                 </td> --}}
-                                                                <td class="text-center">
+                                                                {{-- <td class="text-center">
                                                                     <button
-                                                                        class="btn btn-outline-primary btn-sm pilih-rute-btn"
+                                                                        class="btn btn-outline-secondary btn-sm pilih-rute-btn"
                                                                         data-rute-index="{{ $index }}"
-                                                                        title="Pilih rute ini">
-                                                                        <i class="fas fa-eye"></i>
+                                                                        title="Informasi rute" disabled>
+                                                                        <i class="fas fa-info-circle"></i>
                                                                     </button>
-                                                                </td>
+                                                                </td> --}}
                                                             </tr>
                                                         @endforeach
                                                     </tbody>
@@ -343,20 +343,6 @@
                                                                                 {{ $destinasi["urutan"] }}.
                                                                                 {{ $destinasi["nama"] }}
                                                                             </div>
-                                                                            <small class="text-muted">
-                                                                                @if ($destinasi["posisi"] === "awal")
-                                                                                    <i class="fas fa-info-circle"></i>
-                                                                                    Titik
-                                                                                    awal perjalanan
-                                                                                @elseif($destinasi["posisi"] === "tujuan")
-                                                                                    <i class="fas fa-info-circle"></i>
-                                                                                    Destinasi tujuan akhir
-                                                                                @else
-                                                                                    <i class="fas fa-info-circle"></i>
-                                                                                    Titik
-                                                                                    transit/singgah
-                                                                                @endif
-                                                                            </small>
                                                                         </div>
                                                                     </div>
                                                                 @endforeach
@@ -624,13 +610,13 @@
         // VARIABEL GLOBAL
         // ==========================================
         let markersDestinasiLain = [];
-        let ruteAktif = 1; // 1 = rute dengan transit, 2 = rute langsung, 3 = rute via Pematang Siantar
-        let garisRute1 = null; // Garis untuk rute 1 (transit)
-        let garisRute2 = null; // Garis untuk rute 2 (langsung)
+        let ruteAktif = 1; // 1 = rute terpendek Dijkstra (default dengan transit), 2 = rute langsung API MAPS, 3 = rute via Pematang Siantar
+        let garisRute1 = null; // Garis untuk rute 1 (terpendek Dijkstra dengan transit - DEFAULT)
+        let garisRute2 = null; // Garis untuk rute 2 (langsung API MAPS tanpa transit)
         let garisRute3 = null; // Garis untuk rute 3 (via Pematang Siantar)
-        let infoRute1 = null; // Info jarak dan waktu untuk rute 1
-        let infoRute2 = null; // Info jarak dan waktu untuk rute 2
-        let infoRute3 = null; // Info jarak dan waktu untuk rute 3
+        let infoRute1 = null; // Info jarak dan waktu untuk rute 1 (terpendek Dijkstra)
+        let infoRute2 = null; // Info jarak dan waktu untuk rute 2 (langsung API)
+        let infoRute3 = null; // Info jarak dan waktu untuk rute 3 (via Pematang Siantar)
 
         // Data rute alternatif
         let semuaRuteAlternatif = @json($hasilRute["semua_rute_alternatif"] ?? []);
@@ -703,23 +689,24 @@
                 pilihRuteAlternatif(3);
             });
 
-            // Event handler untuk tabel rute alternatif
-            $('.pilih-rute-btn').click(function() {
-                const ruteIndex = $(this).data('rute-index');
-                pilihRuteAlternatifDariTabel(ruteIndex);
-            });
+            // Event handler untuk tabel rute alternatif - DINONAKTIFKAN
+            // Gunakan toggle di kontrol peta untuk memilih rute
+            // $('.pilih-rute-btn').click(function() {
+            //     const ruteIndex = $(this).data('rute-index');
+            //     pilihRuteAlternatifDariTabel(ruteIndex);
+            // });
 
-            // Event handler untuk hover row tabel
-            $('.rute-row').hover(
-                function() {
-                    const ruteIndex = $(this).data('rute-index');
-                    highlightRuteDiPeta(ruteIndex, true);
-                },
-                function() {
-                    const ruteIndex = $(this).data('rute-index');
-                    highlightRuteDiPeta(ruteIndex, false);
-                }
-            );
+            // Event handler untuk hover row tabel - DINONAKTIFKAN
+            // $('.rute-row').hover(
+            //     function() {
+            //         const ruteIndex = $(this).data('rute-index');
+            //         highlightRuteDiPeta(ruteIndex, true);
+            //     },
+            //     function() {
+            //         const ruteIndex = $(this).data('rute-index');
+            //         highlightRuteDiPeta(ruteIndex, false);
+            //     }
+            // );
 
             // Inisialisasi Bootstrap tooltips untuk destinasi badges
             $('[data-bs-toggle="tooltip"]').tooltip({
@@ -799,16 +786,26 @@
             if (denganTransit) {
                 label.html('<i class="fas fa-route me-1"></i>Dengan Transit');
                 kontrolRute.show();
-                // Aktifkan rute 1 (transit) secara default
+                // Aktifkan rute 1 (terpendek Dijkstra dengan transit) secara default
                 if (ruteAktif !== 1) {
                     pilihRuteAlternatif(1);
+                }
+                // Tampilkan kembali destinasi lain
+                if (!$('#toggleDestinasi').is(':checked')) {
+                    $('#toggleDestinasi').prop('checked', true);
+                    toggleSemuaDestinasi(true);
                 }
             } else {
                 label.html('<i class="fas fa-route me-1"></i>Rute Langsung');
                 kontrolRute.hide();
-                // Langsung aktifkan rute 2 (langsung)
+                // Aktifkan rute 2 (langsung API MAPS)
                 if (ruteAktif !== 2) {
                     pilihRuteAlternatif(2);
+                }
+                // Sembunyikan destinasi lain saat rute langsung aktif
+                if ($('#toggleDestinasi').is(':checked')) {
+                    $('#toggleDestinasi').prop('checked', false);
+                    toggleSemuaDestinasi(false);
                 }
             }
         }
@@ -846,10 +843,11 @@
 
             if (nomorRute === 1) {
                 $('#btnRute1').addClass('active btn-primary').removeClass('btn-outline-primary');
-                $('#infoRuteAktif').html('<i class="fas fa-route text-primary"></i> Rute 1 (Transit) sedang aktif');
+                $('#infoRuteAktif').html('<i class="fas fa-route text-primary"></i> Rute 1 (Transit - Dijkstra) sedang aktif');
             } else if (nomorRute === 2) {
                 $('#btnRute2').addClass('active btn-success').removeClass('btn-outline-success');
-                $('#infoRuteAktif').html('<i class="fas fa-route text-success"></i> Rute 2 (Langsung) sedang aktif');
+                $('#infoRuteAktif').html(
+                    '<i class="fas fa-route text-success"></i> Rute API MAPS (Langsung) sedang aktif');
             } else if (nomorRute === 3) {
                 $('#btnRute3').addClass('active btn-warning').removeClass('btn-outline-warning');
                 $('#infoRuteAktif').html(
@@ -861,6 +859,21 @@
 
             // Update info rute di UI - SELALU dipanggil untuk update tampilan
             updateInfoRute();
+
+            // Kontrol tampilan destinasi lain berdasarkan rute yang aktif
+            if (nomorRute === 2) {
+                // Rute 2 (Langsung API) - sembunyikan destinasi lain
+                if ($('#toggleDestinasi').is(':checked')) {
+                    $('#toggleDestinasi').prop('checked', false);
+                    toggleSemuaDestinasi(false);
+                }
+            } else {
+                // Rute 1 dan 3 - tampilkan destinasi lain jika toggle aktif
+                if (!$('#toggleDestinasi').is(':checked')) {
+                    $('#toggleDestinasi').prop('checked', true);
+                    toggleSemuaDestinasi(true);
+                }
+            }
         }
 
         // Fungsi untuk menampilkan rute yang aktif
@@ -869,19 +882,48 @@
 
             if (!peta) return;
 
-            // Sembunyikan semua garis rute
-            if (garisRute1 && peta.hasLayer(garisRute1)) {
-                peta.removeLayer(garisRute1);
+            console.log('=== TAMPILKAN RUTE AKTIF ===');
+            console.log('Rute aktif:', ruteAktif);
+
+            // Sembunyikan semua garis rute dengan cara yang benar
+            // Rute 1 (bisa layer group atau single layer)
+            if (garisRute1) {
+                if (garisRute1 instanceof L.LayerGroup) {
+                    garisRute1.eachLayer(layer => {
+                        if (peta.hasLayer(layer)) {
+                            peta.removeLayer(layer);
+                        }
+                    });
+                } else if (peta.hasLayer(garisRute1)) {
+                    peta.removeLayer(garisRute1);
+                }
             }
-            if (garisRute2 && peta.hasLayer(garisRute2)) {
-                peta.removeLayer(garisRute2);
+
+            // Rute 2 (single layer)
+            if (garisRute2) {
+                if (peta.hasLayer(garisRute2)) {
+                    peta.removeLayer(garisRute2);
+                }
             }
-            if (garisRute3 && peta.hasLayer(garisRute3)) {
-                peta.removeLayer(garisRute3);
+
+            // Rute 3 (layer group)
+            if (garisRute3) {
+                if (garisRute3 instanceof L.LayerGroup) {
+                    garisRute3.eachLayer(layer => {
+                        if (peta.hasLayer(layer)) {
+                            peta.removeLayer(layer);
+                        }
+                    });
+                } else if (peta.hasLayer(garisRute3)) {
+                    peta.removeLayer(garisRute3);
+                }
             }
+
+            console.log('Semua rute disembunyikan');
 
             // Tampilkan rute yang aktif
             if (ruteAktif === 1 && garisRute1) {
+                console.log('Menampilkan Rute 1 (Transit - Dijkstra)');
                 if (garisRute1 instanceof L.LayerGroup) {
                     // Jika layer group, tambahkan semua layer
                     garisRute1.eachLayer(layer => {
@@ -891,12 +933,33 @@
                     });
                 } else {
                     // Jika single layer
-                    garisRute1.addTo(peta);
+                    if (!peta.hasLayer(garisRute1)) {
+                        garisRute1.addTo(peta);
+                    }
                 }
+                console.log('✅ Rute 1 ditampilkan');
             } else if (ruteAktif === 2 && garisRute2) {
-                garisRute2.addTo(peta);
+                console.log('Menampilkan Rute 2 (Langsung API MAPS)');
+                if (!peta.hasLayer(garisRute2)) {
+                    garisRute2.addTo(peta);
+                }
+                console.log('✅ Rute 2 ditampilkan');
             } else if (ruteAktif === 3 && garisRute3) {
-                garisRute3.addTo(peta);
+                console.log('Menampilkan Rute 3 (Via Pematang Siantar)');
+                if (garisRute3 instanceof L.LayerGroup) {
+                    garisRute3.eachLayer(layer => {
+                        if (!peta.hasLayer(layer)) {
+                            layer.addTo(peta);
+                        }
+                    });
+                } else {
+                    if (!peta.hasLayer(garisRute3)) {
+                        garisRute3.addTo(peta);
+                    }
+                }
+                console.log('✅ Rute 3 ditampilkan');
+            } else {
+                console.log('⚠️ Rute belum tersedia atau tidak valid');
             }
         }
 
@@ -925,14 +988,14 @@
             console.log('Data database - Waktu:', dataAsliWaktu);
 
             if (ruteAktif === 1) {
-                // Rute 1 (Transit) - SELALU gunakan data asli dari database
+                // Rute 1 (Terpendek Dijkstra dengan Transit) - SELALU gunakan data asli dari database
                 jarakElement.text(dataAsliJarak);
                 waktuElement.text(dataAsliWaktu);
-                console.log('Menampilkan data rute 1 (transit) dari database');
+                console.log('Menampilkan data rute 1 (terpendek Dijkstra dengan transit) dari database');
 
             } else if (ruteAktif === 2) {
-                // Rute 2 (Langsung) - gunakan data dari API jika tersedia, fallback ke database
-                console.log('Mencoba menampilkan data rute 2 dari API...');
+                // Rute 2 (Langsung API MAPS) - gunakan data dari API jika tersedia, fallback ke database
+                console.log('Mencoba menampilkan data rute 2 (langsung API) dari API...');
                 console.log('infoRute2 data:', infoRute2);
 
                 let jarakUpdated = false;
@@ -959,10 +1022,8 @@
                     let waktuFormatted;
 
                     if (typeof infoRute2.waktu === 'string') {
-                        // Format string asli dari API
                         waktuFormatted = infoRute2.waktu;
                     } else if (typeof infoRute2.waktu === 'number') {
-                        // Konversi dari menit ke format readable
                         if (infoRute2.waktu >= 60) {
                             const jam = Math.floor(infoRute2.waktu / 60);
                             const sisaMenit = Math.round(infoRute2.waktu % 60);
@@ -991,6 +1052,7 @@
                 }
 
                 console.log('Data rute 2 selesai diproses');
+
             } else if (ruteAktif === 3) {
                 // Rute 3 (Via Pematang Siantar) - gunakan data dari API jika tersedia, fallback ke database
                 console.log('Mencoba menampilkan data rute 3 dari API...');
@@ -1719,32 +1781,28 @@
         // ==========================================
         function gambarRuteDiPeta(peta, lokasiAwal, wisataAwal, wisataTujuan, koordinatRute) {
             // ==========================================
-            // RUTE 1: Dengan Transit (Rute Original)
+            // RUTE 1: Terpendek Dijkstra dengan Transit - DEFAULT
             // ==========================================
-            console.log('Membuat Rute 1 (Transit)...');
+            console.log('Membuat Rute 1 (Terpendek Dijkstra dengan Transit - DEFAULT)...');
 
             // Garis dari lokasi awal ke wisata terdekat
-            dapatkanDanGambarRuteJalan(peta, lokasiAwal, wisataAwal, '#28a745', 'Jalur ke titik awal', function(garis,
+            dapatkanDanGambarRuteJalan(peta, lokasiAwal, wisataAwal, '#007bff', 'Jalur ke titik awal (Rute 1)', function(garis,
                 info) {
-                // Callback untuk rute 1 - hanya untuk keperluan peta
-                console.log('Garis dari lokasi awal ke wisata terdekat sudah dibuat (untuk peta saja)');
+                console.log('Garis dari lokasi awal ke wisata terdekat sudah dibuat (Rute 1)');
             });
 
             // Garis rute utama antar wisata untuk rute 1
             if (koordinatRute.length > 1) {
-                gambarRuteAntarWisata(peta, koordinatRute, 1); // Parameter 1 untuk rute transit
+                gambarRuteAntarWisata(peta, koordinatRute, 1); // Parameter 1 untuk rute terpendek Dijkstra
             } else if (koordinatRute.length === 1) {
                 dapatkanDanGambarRuteJalan(peta, wisataAwal, wisataTujuan, '#007bff', 'Jalur utama rute 1', function(garis,
                     info) {
                     garisRute1 = garis;
                     if (info) {
                         console.log('Raw data dari API untuk Rute 1 (hanya untuk peta):', info);
-
-                        // Untuk rute 1, kita tetap gunakan data dari database
-                        // Data API hanya untuk keperluan gambar peta
                         console.log('Rute 1 menggunakan data dari database, bukan dari API routing');
                     }
-                    // Sembunyikan rute 1 jika bukan rute aktif
+                    // Rute 1 adalah default, tetap tampilkan
                     if (ruteAktif !== 1) {
                         peta.removeLayer(garis);
                     }
@@ -1752,37 +1810,30 @@
             }
 
             // ==========================================
-            // RUTE 2: Langsung (Tanpa Transit)
+            // RUTE 2: Langsung API MAPS (Tanpa Transit)
             // ==========================================
-            console.log('Membuat Rute 2 (Langsung)...');
+            console.log('Membuat Rute 2 (Langsung API MAPS)...');
 
             // Rute langsung dari lokasi awal ke tujuan akhir
             dapatkanDanGambarRuteJalan(peta, lokasiAwal, wisataTujuan, '#28a745', 'Jalur langsung rute 2', function(garis,
                 info) {
                 garisRute2 = garis;
                 if (info) {
-                    console.log('Raw data dari API untuk Rute 2:', info);
+                    console.log('Raw data dari API untuk Rute 1 (Langsung):', info);
 
-                    // Simpan data rute 2 untuk tampilan alternatif (opsional)
-                    // Hanya untuk keperluan peta, bukan untuk mengganti data asli
                     let jarakLangsung = 0;
                     let waktuLangsung = 0;
 
                     if (info.jarak) {
-                        if (typeof info.jarak === 'string' && info.jarak.includes('km')) {
-                            jarakLangsung = parseFloat(info.jarak.replace(' km', '').replace(',', '.')) || 0;
-                        } else if (typeof info.jarak === 'number') {
+                        if (typeof info.jarak === 'number') {
                             jarakLangsung = info.jarak;
                         }
                     }
 
                     if (info.durasi) {
-                        // Simpan format asli dari API, jangan konversi ke menit
                         if (typeof info.durasi === 'string') {
-                            // Gunakan format asli dari API
                             waktuLangsung = info.durasi;
                         } else if (typeof info.durasi === 'number') {
-                            // Jika API memberikan angka (dalam menit), konversi ke format string
                             if (info.durasi >= 60) {
                                 const jam = Math.floor(info.durasi / 60);
                                 const sisaMenit = Math.round(info.durasi % 60);
@@ -1793,20 +1844,19 @@
                         }
                     }
 
-
-                    // Simpan untuk keperluan display rute langsung
+                    // Simpan untuk keperluan display rute 2 (langsung API MAPS)
                     infoRute2 = {
                         jarak: jarakLangsung,
                         waktu: waktuLangsung
                     };
 
-                    console.log('infoRute2 final (hanya untuk rute langsung):', infoRute2);
+                    console.log('infoRute2 final (rute langsung API MAPS):', infoRute2);
                 }
                 // Sembunyikan rute 2 secara default, tampilkan hanya jika aktif
                 if (ruteAktif !== 2) {
                     peta.removeLayer(garis);
                 }
-                console.log('Rute 2 (Langsung) selesai dibuat');
+                console.log('Rute 2 (Langsung API MAPS) selesai dibuat');
             });
 
             // ==========================================
@@ -1927,22 +1977,25 @@
             console.log(`Membuat rute antar wisata untuk Rute ${nomorRute}...`);
 
             let garisRute = [];
+            const warnaRute = nomorRute === 1 ? '#007bff' : '#28a745'; // Biru untuk rute 1, hijau untuk lainnya
 
             // Gambar rute antar titik wisata secara berurutan
             for (let i = 0; i < koordinatRute.length - 1; i++) {
                 const asal = koordinatRute[i];
                 const tujuan = koordinatRute[i + 1];
 
-                dapatkanDanGambarRuteJalan(peta, asal, tujuan, '#007bff', `Jalur ${i + 1} rute ${nomorRute}`, function(
+                dapatkanDanGambarRuteJalan(peta, asal, tujuan, warnaRute, `Jalur ${i + 1} rute ${nomorRute}`, function(
                     garis, info) {
                     garisRute.push(garis);
 
                     // Jika ini adalah garis terakhir, buat layer group
                     if (i === koordinatRute.length - 2) {
-                        if (nomorRute === 1) {
-                            // Buat layer group untuk rute 1
-                            garisRute1 = L.layerGroup(garisRute);
-                            console.log('Rute 1 (Transit) layer group selesai dibuat');
+                        garisRute1 = L.layerGroup(garisRute);
+                        console.log('Rute 1 (Terpendek Dijkstra dengan Transit) selesai dibuat dengan', garisRute.length,
+                            'segmen');
+                        // Rute 1 adalah default, tetap tampilkan
+                        if (ruteAktif !== 1) {
+                            garisRute.forEach(g => peta.removeLayer(g));
                         }
                     }
                 });
@@ -2425,8 +2478,8 @@
         }
 
         /* ==========================================
-                                   RUTE ALTERNATIF TABLE STYLING
-                                   ========================================== */
+                                           RUTE ALTERNATIF TABLE STYLING
+                                           ========================================== */
         /* Gradient Header untuk Card Rute Alternatif */
         .bg-gradient-primary {
             background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
@@ -2450,16 +2503,16 @@
         }
 
         #tabelRuteAlternatif tbody tr {
-            transition: all 0.3s ease;
-            cursor: pointer;
+            /* Interaksi dinonaktifkan - hanya tampilan informasi */
+            cursor: default;
         }
 
-        #tabelRuteAlternatif tbody tr:hover {
-            background-color: #f8f9fa !important;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
+        /* Hover effect dinonaktifkan untuk tabel */
+        /* #tabelRuteAlternatif tbody tr:hover {
+                background-color: #f8f9fa !important;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            } */
         #tabelRuteAlternatif tbody tr.table-primary {
             background-color: rgba(0, 123, 255, 0.1) !important;
             border-left: 4px solid #007bff;
@@ -2539,42 +2592,42 @@
             }
         }
 
-        /* Button Pilih Rute */
+        /* Button Pilih Rute - DINONAKTIFKAN */
         .pilih-rute-btn {
-            transition: all 0.3s ease;
             border-radius: 20px;
             padding: 5px 12px;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
 
-        .pilih-rute-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
-        }
-
+        /* Hover effect dinonaktifkan untuk button */
+        /* .pilih-rute-btn:hover {
+                transform: scale(1.1);
+                box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+            } */
         .pilih-rute-btn.btn-primary {
             background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
             border: none;
         }
 
-        /* Animation untuk Row Selection */
-        @keyframes selectedRowPulse {
-            0% {
-                transform: scale(1);
+        /* Animation untuk Row Selection - DINONAKTIFKAN */
+        /* @keyframes selectedRowPulse {
+                0% {
+                    transform: scale(1);
+                }
+
+                50% {
+                    transform: scale(1.02);
+                }
+
+                100% {
+                    transform: scale(1);
+                }
             }
 
-            50% {
-                transform: scale(1.02);
-            }
-
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        .rute-row.table-primary {
-            animation: selectedRowPulse 0.5s ease-in-out;
-        }
-
+            .rute-row.table-primary {
+                animation: selectedRowPulse 0.5s ease-in-out;
+            } */
         /* Responsif untuk Tabel Rute Alternatif */
         @media (max-width: 992px) {
             #tabelRuteAlternatif {

@@ -625,101 +625,60 @@ class Dijkstra extends Controller
     }
 
     /**
-     * Cari semua rute alternatif menggunakan modified Dijkstra dengan K-shortest paths
+     * Cari rute terpendek dan rute via Pematang Siantar
+     * Disederhanakan: hanya 2 rute yang ditampilkan
      */
     private function cariSemuaRuteAlternatif($graf, $semuaWisata, $wisataAwal, $wisataTujuan, $jarakKeWisataAwal = 0)
     {
         $ruteAlternatif = [];
-        $maxRute = 4; // Maksimal 4 rute alternatif (termasuk rute utama)
 
-        // Gunakan Yen's algorithm untuk mencari K-shortest paths
+        // 1. RUTE TERPENDEK dari graf database (menggunakan Dijkstra)
+        $ruteTerpendek = $this->dijkstraStandard($graf, $semuaWisata, $wisataAwal, $wisataTujuan);
+
+        if (!empty($ruteTerpendek['jalur'])) {
+            $ruteAlternatif[] = $this->formatRuteInfo($ruteTerpendek, $semuaWisata, 1, $jarakKeWisataAwal);
+            Log::info('✅ Rute 1 (Terpendek) ditemukan: ' . implode(' -> ', $ruteTerpendek['jalur']) . ' (Jarak: ' . $ruteTerpendek['jarak_total'] . ' km)');
+        } else {
+            Log::warning('⚠️ Tidak ada rute terpendek ditemukan dari graf');
+        }
+
+        // 2. RUTE VIA PEMATANG SIANTAR
+        $ruteViaPematangSiantar = $this->buatRuteViaPematangSiantar($wisataAwal, $wisataTujuan, 2, $jarakKeWisataAwal);
+        if ($ruteViaPematangSiantar && !$this->ruteUdahAda($ruteViaPematangSiantar['jalur'], $ruteAlternatif)) {
+            $ruteAlternatif[] = $ruteViaPematangSiantar;
+            Log::info('✅ Rute 2 (Via Pematang Siantar) ditambahkan: ' . implode(' -> ', $ruteViaPematangSiantar['jalur']) . ' (Jarak: ' . $ruteViaPematangSiantar['jarak_rute'] . ' km)');
+        } else {
+            Log::warning('⚠️ Rute via Pematang Siantar tidak ditambahkan (sudah ada atau tidak valid)');
+        }
+
+        Log::info('=== SUMMARY ===');
+        Log::info('📊 Total rute yang ditampilkan: ' . count($ruteAlternatif));
+        foreach ($ruteAlternatif as $index => $rute) {
+            $namaRute = $index === 0 ? 'Terpendek' : 'Via Pematang Siantar';
+            Log::info('   Rute ' . ($index + 1) . ' (' . $namaRute . '): ' . implode(' -> ', $rute['jalur']) . ' (' . $rute['jarak_rute'] . ' km, ' . $rute['waktu_rute'] . ')');
+        }
+
+        return $ruteAlternatif;
+    }
+
+    /**
+     * BACKUP: Method lama untuk mencari banyak rute (tidak digunakan)
+     * Disimpan untuk referensi jika diperlukan di masa depan
+     */
+    private function cariSemuaRuteAlternatif_BACKUP($graf, $semuaWisata, $wisataAwal, $wisataTujuan, $jarakKeWisataAwal = 0)
+    {
+        $ruteAlternatif = [];
+        $maxRuteDariGraf = 10;
+        $maxRuteTotal = 15;
+
         $rutePertama = $this->dijkstraStandard($graf, $semuaWisata, $wisataAwal, $wisataTujuan);
 
         if (!empty($rutePertama['jalur'])) {
             $ruteAlternatif[] = $this->formatRuteInfo($rutePertama, $semuaWisata, 1, $jarakKeWisataAwal);
-
-            // Log rute pertama
             Log::info('Rute 1 ditemukan: ' . implode(' -> ', $rutePertama['jalur']));
 
-            // Cari rute alternatif lainnya dengan menghapus edge satu per satu
-            for ($k = 1; $k < $maxRute; $k++) {
-                $ruteKandidat = []; // Reset kandidat untuk setiap iterasi
-                $ruteTerbaik = null;
-                $jarakTerbaik = PHP_INT_MAX;
-
-                Log::info("Mencari rute alternatif ke-" . ($k + 1));
-
-                // Untuk setiap rute yang sudah ditemukan, coba buat variasi
-                foreach ($ruteAlternatif as $ruteExisting) {
-                    $jalurExisting = $ruteExisting['jalur'];
-
-                    // Coba hapus setiap edge dalam jalur dan cari rute baru
-                    for ($i = 0; $i < count($jalurExisting) - 1; $i++) {
-                        $grafTemp = $graf;
-                        $this->hapusEdgeDariGraf($grafTemp, $jalurExisting[$i], $jalurExisting[$i + 1]);
-
-                        $ruteBaru = $this->dijkstraStandard($grafTemp, $semuaWisata, $wisataAwal, $wisataTujuan);
-
-                        if (!empty($ruteBaru['jalur']) && !$this->ruteUdahAda($ruteBaru['jalur'], $ruteAlternatif)) {
-                            $ruteBaruFormatted = $this->formatRuteInfo($ruteBaru, $semuaWisata, $k + 1, $jarakKeWisataAwal);
-
-                            // Pastikan ada perbedaan jarak yang signifikan (minimal 1 km)
-                            $jarakSignifikan = true;
-                            foreach ($ruteAlternatif as $ruteExisting) {
-                                $selisihJarak = abs($ruteBaruFormatted['jarak_rute'] - $ruteExisting['jarak_rute']);
-                                if ($selisihJarak < 1.0) { // kurang dari 1 km perbedaan
-                                    $jarakSignifikan = false;
-                                    Log::info('Rute ditolak karena jarak terlalu mirip: ' .
-                                              implode(' -> ', $ruteBaru['jalur']) .
-                                              ' (' . $ruteBaruFormatted['jarak_rute'] . ' km vs ' .
-                                              $ruteExisting['jarak_rute'] . ' km)');
-                                    break;
-                                }
-                            }
-
-                            if ($jarakSignifikan) {
-                                Log::info('Rute kandidat ditemukan: ' . implode(' -> ', $ruteBaru['jalur']) .
-                                          ' (Jarak: ' . $ruteBaruFormatted['jarak_rute'] . ' km)');
-
-                                // Cari rute terpendek dari kandidat baru
-                                if ($ruteBaruFormatted['jarak_rute'] < $jarakTerbaik) {
-                                    $ruteTerbaik = $ruteBaruFormatted;
-                                    $jarakTerbaik = $ruteBaruFormatted['jarak_rute'];
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Tambahkan rute terbaik jika ditemukan
-                if ($ruteTerbaik !== null) {
-                    $ruteAlternatif[] = $ruteTerbaik;
-                    Log::info('Rute ' . ($k + 1) . ' dipilih: ' . implode(' -> ', $ruteTerbaik['jalur']) .
-                              ' (Jarak: ' . $ruteTerbaik['jarak_rute'] . ' km)');
-                } else {
-                    // Jika tidak ada rute baru ditemukan, hentikan pencarian
-                    Log::info('Tidak ada rute alternatif lagi yang ditemukan pada iterasi ' . ($k + 1));
-                    break;
-                }
-            }            // Tambahkan rute langsung sebagai alternatif terakhir jika belum ada
-            $ruteLangsung = $this->buatRuteLangsung($wisataAwal, $wisataTujuan, count($ruteAlternatif) + 1, $jarakKeWisataAwal);
-            if (!$this->ruteUdahAda($ruteLangsung['jalur'], $ruteAlternatif)) {
-                $ruteAlternatif[] = $ruteLangsung;
-                Log::info('Rute langsung ditambahkan: ' . implode(' -> ', $ruteLangsung['jalur']));
-            } else {
-                Log::info('Rute langsung sudah ada, tidak ditambahkan');
-            }
-
-            // Tambahkan rute via Pematang Siantar sebagai alternatif
-            $ruteViaPematangSiantar = $this->buatRuteViaPematangSiantar($wisataAwal, $wisataTujuan, count($ruteAlternatif) + 1, $jarakKeWisataAwal);
-            if ($ruteViaPematangSiantar && !$this->ruteUdahAda($ruteViaPematangSiantar['jalur'], $ruteAlternatif)) {
-                $ruteAlternatif[] = $ruteViaPematangSiantar;
-                Log::info('Rute via Pematang Siantar ditambahkan: ' . implode(' -> ', $ruteViaPematangSiantar['jalur']));
-            } else {
-                Log::info('Rute via Pematang Siantar tidak ditambahkan (sudah ada atau tidak valid)');
-            }
-
-            Log::info('Total rute alternatif yang ditemukan: ' . count($ruteAlternatif));
+            // Kode loop pencarian rute alternatif dihapus
+            // Sekarang hanya menggunakan rute terpendek dari Dijkstra
         }
 
         return $ruteAlternatif;
