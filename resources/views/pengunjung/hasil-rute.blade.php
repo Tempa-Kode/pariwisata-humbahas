@@ -309,7 +309,7 @@
                                                 <div class="col-md-6">
                                                     <div class="route-path-box p-3 bg-light rounded">
                                                         <h6 class="fw-bold text-primary mb-3">
-                                                            <i class="fas fa-map-marked-alt"></i> Jalur Perjalanan
+                                                            <i class="fas fa-map-marked-alt"></i> Wisata yang dilalui
                                                         </h6>
                                                         @if (!empty($ruteTerpendek["semua_destinasi_dilalui"]))
                                                             <div class="route-timeline">
