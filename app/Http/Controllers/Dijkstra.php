@@ -77,7 +77,7 @@ class Dijkstra extends Controller
 
         $ruteLangsung = [
             'nomor_rute' => 1,
-            'nama_rute' => 'Rute Terpendek (Langsung)',
+            'nama_rute' => 'Rute Terpendek (Sidikalang)',
             'jalur' => [$wisataTujuan->id_wisata], // ketika digambar, sistem akan mengambil titik awal dari lokasiAwal
             'jarak_rute' => round($jarakLangsung, 2),
             'waktu_rute' => $this->estimasiWaktuTempuh($jarakLangsung),
