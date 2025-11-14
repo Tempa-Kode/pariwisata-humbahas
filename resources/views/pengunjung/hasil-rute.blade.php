@@ -98,6 +98,9 @@
                                                                         style="background-color: {{ $rute["warna_rute"] ?? "#007bff" }};">
                                                                         {{ $rute["nomor_rute"] }}
                                                                     </div>
+                                                                    <div class="mt-1 text-center" style="font-size:12px;">
+                                                                        <small class="text-muted">{{ $rute["nama_rute"] ?? ("Rute " . $rute["nomor_rute"]) }}</small>
+                                                                    </div>
                                                                 </td>
                                                                 <td>
                                                                     <strong
@@ -255,10 +258,9 @@
                                         <div class="card-header bg-primary text-white">
                                             <h5 class="mb-0 d-flex align-items-center text-white">
                                                 <i class="fas fa-crown me-2"></i>
-                                                Rute Terpendek yang Direkomendasikan
+                                                {{ $ruteTerpendek["nama_rute"] ?? 'Rute Terpendek yang Direkomendasikan' }}
                                             </h5>
-                                            <small class="text-light">Detail lengkap rute tercepat menuju destinasi
-                                                Anda</small>
+                                            <small class="text-light">Detail lengkap {{ $ruteTerpendek["nama_rute"] ?? 'rute tercepat' }} menuju destinasi Anda</small>
                                         </div>
                                         <div class="card-body">
                                             <div class="row">
@@ -306,7 +308,7 @@
                                                 </div>
 
                                                 <!-- Kolom Kanan: Destinasi Dilalui -->
-                                                <div class="col-md-6">
+                                                {{-- <div class="col-md-6">
                                                     <div class="route-path-box p-3 bg-light rounded">
                                                         <h6 class="fw-bold text-primary mb-3">
                                                             <i class="fas fa-map-marked-alt"></i> Wisata yang dilalui
@@ -354,7 +356,7 @@
                                                             </p>
                                                         @endif
                                                     </div>
-                                                </div>
+                                                </div> --}}
                                             </div>
                                         </div>
                                     </div>

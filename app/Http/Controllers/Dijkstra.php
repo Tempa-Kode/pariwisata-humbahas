@@ -49,8 +49,98 @@ class Dijkstra extends Controller
 
         $wisataTujuan = Wisata::findOrFail($request->lokasi_tujuan);
 
-        // Cari rute terpendek menggunakan algoritma Dijkstra
-        $hasilRute = $this->algoritmaRuteTerpendek($lokasiAwal, $wisataTujuan);
+        // Simplified behavior: do NOT run Dijkstra.
+        // Produce two routes:
+        //  - Rute 1: langsung dari lokasi awal ke tujuan (menggunakan routing API saat menggambar peta)
+        //  - Rute 2: via Pematang Siantar (segmen: lokasi awal -> Pematang Siantar -> tujuan)
+
+        // Buat objek wisata_awal sederhana yang merepresentasikan titik awal (bisa berupa lokasi pengguna)
+        $wisataAwal = (object) [
+            'id_wisata' => 0,
+            'latitude' => $lokasiAwal['latitude'],
+            'longitude' => $lokasiAwal['longitude'],
+            'nama_wisata' => $namaLokasiAwal
+        ];
+
+        // Rute langsung: hitung jarak menggunakan routing jalan sebenarnya, fallback ke Haversine
+        $jarakLangsung = $this->hitungJarakJalanSebenarnya(
+            $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+            $wisataTujuan->latitude, $wisataTujuan->longitude
+        );
+
+        if ($jarakLangsung === null) {
+            $jarakLangsung = $this->hitungJarakHaversine(
+                $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+                $wisataTujuan->latitude, $wisataTujuan->longitude
+            );
+        }
+
+        $ruteLangsung = [
+            'nomor_rute' => 1,
+            'nama_rute' => 'Rute Terpendek (Langsung)',
+            'jalur' => [$wisataTujuan->id_wisata], // ketika digambar, sistem akan mengambil titik awal dari lokasiAwal
+            'jarak_rute' => round($jarakLangsung, 2),
+            'waktu_rute' => $this->estimasiWaktuTempuh($jarakLangsung),
+            'jumlah_transit' => 0,
+            'warna_rute' => '#28a745',
+            'semua_destinasi_dilalui' => []
+        ];
+
+        // Rute via Pematang Siantar
+        $pematangLat = 2.9676002181287195;
+        $pematangLng = 99.06843670021658;
+
+        $jarakKePematang = $this->hitungJarakJalanSebenarnya(
+            $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+            $pematangLat, $pematangLng
+        );
+        if ($jarakKePematang === null) {
+            $jarakKePematang = $this->hitungJarakHaversine(
+                $lokasiAwal['latitude'], $lokasiAwal['longitude'],
+                $pematangLat, $pematangLng
+            );
+        }
+
+        $jarakPematangKeTujuan = $this->hitungJarakJalanSebenarnya(
+            $pematangLat, $pematangLng,
+            $wisataTujuan->latitude, $wisataTujuan->longitude
+        );
+        if ($jarakPematangKeTujuan === null) {
+            $jarakPematangKeTujuan = $this->hitungJarakHaversine(
+                $pematangLat, $pematangLng,
+                $wisataTujuan->latitude, $wisataTujuan->longitude
+            );
+        }
+
+        $totalJarakVia = $jarakKePematang + $jarakPematangKeTujuan;
+
+        $ruteViaPematang = [
+            'nomor_rute' => 2,
+            'nama_rute' => 'Rute via Pematang Siantar',
+            'jalur' => [$wisataTujuan->id_wisata],
+            'jarak_rute' => round($totalJarakVia, 2),
+            'waktu_rute' => $this->estimasiWaktuTempuh($totalJarakVia),
+            'jumlah_transit' => 1,
+            'warna_rute' => '#ffc107',
+            'via_pematang_siantar' => true,
+            'semua_destinasi_dilalui' => []
+        ];
+
+        $semuaRuteAlternatif = [$ruteLangsung, $ruteViaPematang];
+
+        $jarakKeWisataAwal = 0; // titik awal adalah lokasi pengguna, tidak ada jarak ke titik transit
+
+        $totalJarak = $jarakLangsung; // untuk tampilan ringkasan gunakan jarak langsung sebagai utama
+
+        $hasilRute = [
+            'jalur' => [$wisataTujuan->id_wisata],
+            'jarak_total' => $totalJarak,
+            'waktu_tempuh' => $this->estimasiWaktuTempuh($totalJarak),
+            'wisata_awal' => $wisataAwal,
+            'jarak_ke_wisata_awal' => $jarakKeWisataAwal,
+            'jarak_rute_wisata' => $jarakLangsung,
+            'semua_rute_alternatif' => $semuaRuteAlternatif
+        ];
 
         return view('pengunjung.hasil-rute', compact('hasilRute', 'lokasiAwal', 'namaLokasiAwal', 'wisataTujuan'));
     }
